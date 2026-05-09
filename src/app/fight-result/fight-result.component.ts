@@ -3,6 +3,7 @@ import { FightEndService} from '../services/fight-end.service';
 
 @Component({
   selector: 'app-fight-result',
+  standalone: false,
   templateUrl: './fight-result.component.html',
   styleUrls: ['./fight-result.component.less']
 })

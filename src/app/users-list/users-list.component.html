@@ -1,25 +1,39 @@
- <h2>{{'Users' | translate}}:</h2>
-  <input [(ngModel)]="searchText" placeholder="{{'Search' | translate}}" pInputText id="search">
-  <div class="fullScope">
+<h2>{{'Users' | translate}}:</h2>
+<input [(ngModel)]="searchText" placeholder="{{'Search' | translate}}" pInputText id="search">
+<div class="fullScope">
   <ul id = "usersList">
-    <li *ngFor='let userdata of usersList | searchUsers : searchText'>
-      <label class='username'>{{userdata.user.login}}</label>
-      <label class='status'>⚫</label>
-      <label *ngIf='userdata.friend' class='friend'>{{'Friend' | translate}}</label> <br>
-      <label *ngIf='userdata.requested' class='requested'>{{'Requested' | translate}} 
-        <p-button class='removeRequest' label="{{'Delete request' | translate}}" (onClick) = 'deleteReq(userdata)'></p-button>
-      </label>
-      <label *ngIf='userdata.requesting' class='requesting'>{{'Requesting' | translate}}
-        <p-button class='acceptRequest' label="{{'Accept request' | translate}}" (onClick) = 'acceptReq(userdata)'></p-button>        
-        <p-button class='removeRequest' label="{{'Decline request' | translate}}" (onClick) = 'declineReq(userdata)'></p-button>
-        <br>
-      </label>
-        <p-button class='neutral' label="{{'message' | translate}}" (onClick)='openMessageWindow(userdata)'></p-button>
-        <p-button *ngIf= 'userdata.noRelations' class='neutral' label="{{'Send friends request' | translate}}" (onClick)='sendRequest(userdata)'></p-button> 
-      <label *ngIf='adminView' class = 'adminPanel'>
-        {{userdata.admin ? ('Admin' | translate) : ('User' | translate) }}
-        <p-button *ngIf='userdata.notAdmin' class='acceptRequest' label="{{'Grant admin role' | translate}}" (onClick)='grantAdmin(userdata)'></p-button>
-      </label>
-      </li>
-  </ul>
-</div>
+    @for (userdata of usersList | searchUsers : searchText; track userdata) {
+      <li>
+        <label class='username'>{{userdata.user.login}}</label>
+        <label class='status'>⚫</label>
+        @if (userdata.friend) {
+          <label class='friend'>{{'Friend' | translate}}</label>
+          } <br>
+          @if (userdata.requested) {
+            <label class='requested'>{{'Requested' | translate}}
+              <p-button class='removeRequest' label="{{'Delete request' | translate}}" (onClick) = 'deleteReq(userdata)'></p-button>
+            </label>
+          }
+          @if (userdata.requesting) {
+            <label class='requesting'>{{'Requesting' | translate}}
+              <p-button class='acceptRequest' label="{{'Accept request' | translate}}" (onClick) = 'acceptReq(userdata)'></p-button>
+              <p-button class='removeRequest' label="{{'Decline request' | translate}}" (onClick) = 'declineReq(userdata)'></p-button>
+              <br>
+              </label>
+            }
+            <p-button class='neutral' label="{{'message' | translate}}" (onClick)='openMessageWindow(userdata)'></p-button>
+            @if (userdata.noRelations) {
+              <p-button class='neutral' label="{{'Send friends request' | translate}}" (onClick)='sendRequest(userdata)'></p-button>
+            }
+            @if (adminView) {
+              <label class = 'adminPanel'>
+                {{userdata.admin ? ('Admin' | translate) : ('User' | translate) }}
+                @if (userdata.notAdmin) {
+                  <p-button class='acceptRequest' label="{{'Grant admin role' | translate}}" (onClick)='grantAdmin(userdata)'></p-button>
+                }
+              </label>
+            }
+          </li>
+        }
+      </ul>
+    </div>

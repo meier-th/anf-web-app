@@ -5,6 +5,7 @@ import { Spell } from '../classes/spell';
 
 @Component({
   selector: 'app-spells',
+  standalone: false,
   templateUrl: './spells.component.html',
   styleUrls: ['./spells.component.less']
 })

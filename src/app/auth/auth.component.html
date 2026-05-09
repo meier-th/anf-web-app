@@ -1,70 +1,81 @@
-<p-tabMenu [model]="pages" [activeItem]="pages[0]" *ngIf="!registration"></p-tabMenu>
-<div id="sign-in" *ngIf="!registration">
-  <div>
-    <label for="sign-in-login">{{'Login:' | translate}}</label><br>
-    <input id="sign-in-login" type="text" pInputText [(ngModel)]="username"/>
+@if (!registration) {
+  <div class="auth-mode">
+    <button type="button" (click)="authMode = 'signin'">{{'Sign in' | translate}}</button>
+    <button type="button" (click)="authMode = 'signup'">{{'Sign up' | translate}}</button>
   </div>
-  <div>
-    <label for="sign-in-password">{{'Password:' | translate}} </label><br>
-    <input id="sign-in-password" type="password" pPassword [feedback]="false"
-           [(ngModel)]="firstPassword" (keyup.enter)="tryToLogin()"/>
-  </div>
-  <p-button label="{{'Sign in' | translate}}" (onClick)="tryToLogin()"></p-button>
-  <!--<p-button label="{{'VK' | translate}}" (onClick)="tryToSignInWithVk()"></p-button>
-  <p-button label="G+" (onClick)="tryToSignInWithGoogle()"></p-button>-->
-</div>
-
-<div id="sign-up" *ngIf="!registration">
-  <div>
-    <label for="sign-up-login">{{'Login:' | translate}} </label><br>
-    <input id="sign-up-login" type="text" pInputText [(ngModel)]="username"/>
-  </div>
-  <div>
-    <label for="sign-up-password">{{'Password:' | translate}} </label><br>
-    <input id="sign-up-password" type="password" pPassword [(ngModel)]="firstPassword"/>
-  </div>
-  <div>
-    <label for="sign-up-confirm">{{'Confirm password:' | translate}} </label><br>
-    <input id="sign-up-confirm" type="password" pPassword
-           [(ngModel)]="secondPassword" (keyup.enter)="tryToSignUp()"/>
-  </div>
-  <p-button label="{{'Sign up' | translate}}" (onClick)="tryToSignUp()"></p-button>
-</div>
-
-<div id="customization" *ngIf="registration">
-  <div class="vertical">
-    <div class="customization">
-      <p>{{'Gender:' | translate}} {{appearance.gender | translate}}</p>
-      <p-inputSwitch [(ngModel)]="gender" (onChange)="setGender()"></p-inputSwitch>
-      <p>{{'Hair color:' | translate}} {{appearance.hairColour.toLowerCase() | translate}}</p>
-      <p-radioButton name="HairColor" label="{{'Yellow ' | translate}}" value="YELLOW" [(ngModel)]="appearance.hairColour"
-                     (onClick)="changeHair()"></p-radioButton>
-      <p-radioButton name="HairColor" label="{{'Brown ' | translate}}" value="BROWN" [(ngModel)]="appearance.hairColour"
-                     (onClick)="changeHair()"></p-radioButton>
-      <p-radioButton name="HairColor" label="{{'Black ' | translate}}" value="BLACK" [(ngModel)]="appearance.hairColour"
-                     (onClick)="changeHair()"></p-radioButton>
-      <p>{{'Skin color:' | translate}} {{appearance.skinColour.toLowerCase() | translate}}</p>
-      <p-radioButton name="SkinColor" label="{{'White ' | translate}}" value="WHITE" [(ngModel)]="appearance.skinColour"
-                     (onClick)="changeSkin()"></p-radioButton>
-      <p-radioButton name="SkinColor" label="{{'Latin ' | translate}}" value="LATIN" [(ngModel)]="appearance.skinColour"
-                     (onClick)="changeSkin()"></p-radioButton>
-      <p-radioButton name="SkinColor" label="{{'Dark ' | translate}}" value="DARK" [(ngModel)]="appearance.skinColour"
-                     (onClick)="changeSkin()"></p-radioButton>
-      <p-radioButton name="SkinColor" label="{{'Black ' | translate}}" value="BLACK" [(ngModel)]="appearance.skinColour"
-                     (onClick)="changeSkin()"></p-radioButton>
-      <p>{{'Clothes color:' | translate}} {{appearance.clothesColour.toLowerCase() | translate}}</p>
-      <p-radioButton name="ClothesColor" label="{{'Green ' | translate}}" value="GREEN"
-                     [(ngModel)]="appearance.clothesColour" (onClick)="changeClothes()"></p-radioButton>
-      <p-radioButton name="ClothesColor" label="{{'Red ' | translate}}" value="RED"
-                     [(ngModel)]="appearance.clothesColour" (onClick)="changeClothes()"></p-radioButton>
-      <p-radioButton name="ClothesColor" label="{{'Blue ' | translate}}" value="BLUE"
-                     [(ngModel)]="appearance.clothesColour" (onClick)="changeClothes()"></p-radioButton>
+}
+@if (!registration && authMode === 'signin') {
+  <div id="sign-in">
+    <div>
+      <label for="sign-in-login">{{'Login:' | translate}}</label><br>
+      <input id="sign-in-login" type="text" pInputText [(ngModel)]="username"/>
     </div>
-    <div class="customization">
-      <app-character></app-character>
+    <div>
+      <label for="sign-in-password">{{'Password:' | translate}} </label><br>
+      <input id="sign-in-password" type="password" pPassword [feedback]="false"
+        [(ngModel)]="firstPassword" (keyup.enter)="tryToLogin()"/>
+    </div>
+    <p-button label="{{'Sign in' | translate}}" (onClick)="tryToLogin()"></p-button>
+    <!--<p-button label="{{'VK' | translate}}" (onClick)="tryToSignInWithVk()"></p-button>
+    <p-button label="G+" (onClick)="tryToSignInWithGoogle()"></p-button>-->
+  </div>
+}
+
+@if (!registration && authMode === 'signup') {
+  <div id="sign-up">
+    <div>
+      <label for="sign-up-login">{{'Login:' | translate}} </label><br>
+      <input id="sign-up-login" type="text" pInputText [(ngModel)]="username"/>
+    </div>
+    <div>
+      <label for="sign-up-password">{{'Password:' | translate}} </label><br>
+      <input id="sign-up-password" type="password" pPassword [(ngModel)]="firstPassword"/>
+    </div>
+    <div>
+      <label for="sign-up-confirm">{{'Confirm password:' | translate}} </label><br>
+      <input id="sign-up-confirm" type="password" pPassword
+        [(ngModel)]="secondPassword" (keyup.enter)="tryToSignUp()"/>
+    </div>
+    <p-button label="{{'Sign up' | translate}}" (onClick)="tryToSignUp()"></p-button>
+  </div>
+}
+
+@if (registration) {
+  <div id="customization">
+    <div class="vertical">
+      <div class="customization">
+        <p>{{'Gender:' | translate}} {{appearance.gender | translate}}</p>
+        <input type="checkbox" [(ngModel)]="gender" (change)="setGender()">
+        <p>{{'Hair color:' | translate}} {{appearance.hairColour.toLowerCase() | translate}}</p>
+        <p-radioButton name="HairColor" label="{{'Yellow ' | translate}}" value="YELLOW" [(ngModel)]="appearance.hairColour"
+        (onClick)="changeHair()"></p-radioButton>
+        <p-radioButton name="HairColor" label="{{'Brown ' | translate}}" value="BROWN" [(ngModel)]="appearance.hairColour"
+        (onClick)="changeHair()"></p-radioButton>
+        <p-radioButton name="HairColor" label="{{'Black ' | translate}}" value="BLACK" [(ngModel)]="appearance.hairColour"
+        (onClick)="changeHair()"></p-radioButton>
+        <p>{{'Skin color:' | translate}} {{appearance.skinColour.toLowerCase() | translate}}</p>
+        <p-radioButton name="SkinColor" label="{{'White ' | translate}}" value="WHITE" [(ngModel)]="appearance.skinColour"
+        (onClick)="changeSkin()"></p-radioButton>
+        <p-radioButton name="SkinColor" label="{{'Latin ' | translate}}" value="LATIN" [(ngModel)]="appearance.skinColour"
+        (onClick)="changeSkin()"></p-radioButton>
+        <p-radioButton name="SkinColor" label="{{'Dark ' | translate}}" value="DARK" [(ngModel)]="appearance.skinColour"
+        (onClick)="changeSkin()"></p-radioButton>
+        <p-radioButton name="SkinColor" label="{{'Black ' | translate}}" value="BLACK" [(ngModel)]="appearance.skinColour"
+        (onClick)="changeSkin()"></p-radioButton>
+        <p>{{'Clothes color:' | translate}} {{appearance.clothesColour.toLowerCase() | translate}}</p>
+        <p-radioButton name="ClothesColor" label="{{'Green ' | translate}}" value="GREEN"
+        [(ngModel)]="appearance.clothesColour" (onClick)="changeClothes()"></p-radioButton>
+        <p-radioButton name="ClothesColor" label="{{'Red ' | translate}}" value="RED"
+        [(ngModel)]="appearance.clothesColour" (onClick)="changeClothes()"></p-radioButton>
+        <p-radioButton name="ClothesColor" label="{{'Blue ' | translate}}" value="BLUE"
+        [(ngModel)]="appearance.clothesColour" (onClick)="changeClothes()"></p-radioButton>
+      </div>
+      <div class="customization">
+        <app-character></app-character>
+      </div>
+    </div>
+    <div class="vertical">
+      <p-button label="{{'Confirm' | translate}}" (onClick)="sendAppearance()"></p-button>
     </div>
   </div>
-  <div class="vertical">
-    <p-button label="{{'Confirm' | translate}}" (onClick)="sendAppearance()"></p-button>
-  </div>
-</div>
+}

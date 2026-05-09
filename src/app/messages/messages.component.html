@@ -1,8 +1,10 @@
 <div id="messages" [@load]="loaded? 'default' : 'hidden'">
   <label id="header">{{'Dialogues' | translate }}</label><br>
   <ul class="list">
-    <li *ngFor="let dialogue of dialogues" class="row" (click)="parent.router.navigateByUrl('dialogue/' + dialogue)">
-      {{'Interlocutor' | translate }}: {{dialogue}}
-    </li>
+    @for (dialogue of dialogues; track dialogue) {
+      <li class="row" (click)="parent.router.navigateByUrl('dialogue/' + dialogue)">
+        {{'Interlocutor' | translate }}: {{dialogue}}
+      </li>
+    }
   </ul>
 </div>

@@ -8,11 +8,12 @@ import {FightService} from '../services/fight/fight.service';
 import {User} from '../classes/user';
 import {MainComponent} from '../main/main.component';
 import {CompatClient, Stomp} from '@stomp/stompjs';
-import * as SockJS from 'sockjs-client';
+import SockJS from 'sockjs-client';
 import {ProfilePageComponent} from '../profile-page/profile-page.component';
 
 @Component({
   selector: 'app-queue',
+  standalone: false,
   templateUrl: './queue.component.html',
   styleUrls: ['./queue.component.less']
 })

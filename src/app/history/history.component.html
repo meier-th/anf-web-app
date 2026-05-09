@@ -8,19 +8,25 @@
       <th>{{'RatingChange' | translate }}</th>
       <th>{{'Rival' | translate }}</th>
     </tr>
-    <tr *ngFor = "let fight of fights">
-      <td>{{fight.date | date:'short'}}</td>
-      <td>{{fight.type}}</td>
-      <td><div [ngClass]="fight.result === 'Win' ? 'won': 'lost'">
-          {{fight.result | translate}} </div></td>
-      <td>{{fight.xpCh}}</td>
-      <td><div *ngIf = "fight.ratingCh !==0" [ngClass]="fight.ratingCh > 0 ? 'won': 'lost'">
-        {{fight.ratingCh}}</div>
-        <div *ngIf = "fight.ratingCh === 0">
-          {{fight.ratingCh}}
-        </div>
+    @for (fight of fights; track fight) {
+      <tr>
+        <td>{{fight.date | date:'short'}}</td>
+        <td>{{fight.type}}</td>
+        <td><div [ngClass]="fight.result === 'Win' ? 'won': 'lost'">
+        {{fight.result | translate}} </div></td>
+        <td>{{fight.xpCh}}</td>
+        <td>@if (fight.ratingCh !==0) {
+          <div [ngClass]="fight.ratingCh > 0 ? 'won': 'lost'">
+          {{fight.ratingCh}}</div>
+        }
+        @if (fight.ratingCh === 0) {
+          <div>
+            {{fight.ratingCh}}
+          </div>
+        }
       </td>
       <td>{{fight.rival}}</td>
     </tr>
-  </table>
+  }
+</table>
 </div>

@@ -6,13 +6,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 
 @Component({
   selector: 'app-single-message',
+  standalone: false,
   templateUrl: './single-message.component.html',
   styleUrls: ['./single-message.component.less']
 })
 export class SingleMessageComponent implements OnInit {
 
-  private input: string;
-  private username: string;
+  input = '';
+  username = '';
   constructor(private serv: SingleMessageService,
     private http: HttpClient) { }
 

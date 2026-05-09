@@ -4,6 +4,7 @@ import {HttpClient, HttpParams} from '@angular/common/http';
 
 @Component({
   selector: 'app-room',
+  standalone: false,
   templateUrl: './room.component.html',
   styleUrls: ['./room.component.less']
 })

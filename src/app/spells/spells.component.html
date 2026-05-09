@@ -1,47 +1,75 @@
 <h2><label class="head">{{'Spells' | translate}}</label></h2>
 <h3><label class="head">{{'Upgrade points:' | translate}} {{freePoints}}</label></h3>
 <div id = "top">
-<div id="earth" class="spell">
-  <h3>Earth Strike</h3>
-  <div class="description">{{'earth' | translate}} <br>
-    {{'Your spell level' | translate}}: {{earthHandling}}
-    <p-button *ngIf="earthHandling === 0 && freePoints > 0" label="{{'Learn spell' | translate}}" (onClick)="learnOrUpgrade('Earth Strike')"></p-button>
-    <p-button *ngIf="earthHandling !== 0  && freePoints > 0" label="{{'Upgrade spell' | translate}}" (onClick)="learnOrUpgrade('Earth Strike')"></p-button>
+  <div id="earth" class="spell">
+    <h3>Earth Strike</h3>
+    <div class="description">{{'earth' | translate}} <br>
+      {{'Your spell level' | translate}}: {{earthHandling}}
+      @if (earthHandling === 0 && freePoints > 0) {
+        <p-button label="{{'Learn spell' | translate}}" (onClick)="learnOrUpgrade('Earth Strike')"></p-button>
+      }
+      @if (earthHandling !== 0  && freePoints > 0) {
+        <p-button label="{{'Upgrade spell' | translate}}" (onClick)="learnOrUpgrade('Earth Strike')"></p-button>
+      }
+    </div>
   </div>
-</div>
-<div id="water" class="spell">
-  <h3>Water Strike</h3>
-  <div *ngIf="user.stats.level >= 5" class="desription">{{'water' | translate}} <br>
-    {{'Your spell level' | translate}}: {{waterHandling}}
-    <p-button *ngIf="waterHandling === 0  && freePoints > 0" label="{{'Learn spell' | translate}}" (onClick)="learnOrUpgrade('Water Strike')"></p-button>
-    <p-button *ngIf="waterHandling !== 0  && freePoints > 0" label="{{'Upgrade spell' | translate}}" (onClick)="learnOrUpgrade('Water Strike')"></p-button>
- </div>
-  <div *ngIf="user.stats.level < 5" class="blocked">
-    <label class="blockLbl">{{'reach5' | translate}}</label>
+  <div id="water" class="spell">
+    <h3>Water Strike</h3>
+    @if (user.stats.level >= 5) {
+      <div class="desription">{{'water' | translate}} <br>
+        {{'Your spell level' | translate}}: {{waterHandling}}
+        @if (waterHandling === 0  && freePoints > 0) {
+          <p-button label="{{'Learn spell' | translate}}" (onClick)="learnOrUpgrade('Water Strike')"></p-button>
+        }
+        @if (waterHandling !== 0  && freePoints > 0) {
+          <p-button label="{{'Upgrade spell' | translate}}" (onClick)="learnOrUpgrade('Water Strike')"></p-button>
+        }
+      </div>
+    }
+    @if (user.stats.level < 5) {
+      <div class="blocked">
+        <label class="blockLbl">{{'reach5' | translate}}</label>
+      </div>
+    }
   </div>
-</div>
 </div>
 <div id="bottom">
-<div id="fire" class="spell">
-  <h3>Fire Strike</h3>
-  <div *ngIf="user.stats.level >= 12" class="description">{{'fire' | translate}} <br>
-    {{'Your spell level' | translate}}: {{fireHandling}}
-    <p-button *ngIf="fireHandling === 0  && freePoints > 0" label="{{'Learn spell' | translate}}" (onClick)="learnOrUpgrade('Fire Strike')"></p-button>
-    <p-button *ngIf="fireHandling !== 0  && freePoints > 0" label="{{'Upgrade spell' | translate}}" (onClick)="learnOrUpgrade('Fire Strike')"></p-button>
- </div>
-  <div *ngIf="user.stats.level < 12" class="blocked">
-    <label class="blockLbl">{{'reach12' | translate}}</label>
+  <div id="fire" class="spell">
+    <h3>Fire Strike</h3>
+    @if (user.stats.level >= 12) {
+      <div class="description">{{'fire' | translate}} <br>
+        {{'Your spell level' | translate}}: {{fireHandling}}
+        @if (fireHandling === 0  && freePoints > 0) {
+          <p-button label="{{'Learn spell' | translate}}" (onClick)="learnOrUpgrade('Fire Strike')"></p-button>
+        }
+        @if (fireHandling !== 0  && freePoints > 0) {
+          <p-button label="{{'Upgrade spell' | translate}}" (onClick)="learnOrUpgrade('Fire Strike')"></p-button>
+        }
+      </div>
+    }
+    @if (user.stats.level < 12) {
+      <div class="blocked">
+        <label class="blockLbl">{{'reach12' | translate}}</label>
+      </div>
+    }
   </div>
-</div>
-<div id="air" class="spell">
-  <h3>Air Strike</h3>
-  <div *ngIf="user.stats.level >=25" class = "description">{{'air' | translate}} <br>
-    {{'Your spell level' | translate}}: {{airHandling}}
-    <p-button *ngIf="airHandling === 0  && freePoints > 0" label="{{'Learn spell' | translate}}" (onClick)="learnOrUpgrade('Air Strike')"></p-button>
-    <p-button *ngIf="airHandling !== 0  && freePoints > 0" label="{{'Upgrade spell' | translate}}" (onClick)="learnOrUpgrade('Air Strike')"></p-button>
- </div>
-  <div *ngIf="user.stats.level < 25" class="blocked">
-    <label class="blockLbl">{{'reach25' | translate}}</label>
+  <div id="air" class="spell">
+    <h3>Air Strike</h3>
+    @if (user.stats.level >=25) {
+      <div class = "description">{{'air' | translate}} <br>
+        {{'Your spell level' | translate}}: {{airHandling}}
+        @if (airHandling === 0  && freePoints > 0) {
+          <p-button label="{{'Learn spell' | translate}}" (onClick)="learnOrUpgrade('Air Strike')"></p-button>
+        }
+        @if (airHandling !== 0  && freePoints > 0) {
+          <p-button label="{{'Upgrade spell' | translate}}" (onClick)="learnOrUpgrade('Air Strike')"></p-button>
+        }
+      </div>
+    }
+    @if (user.stats.level < 25) {
+      <div class="blocked">
+        <label class="blockLbl">{{'reach25' | translate}}</label>
+      </div>
+    }
   </div>
-</div>
 </div>

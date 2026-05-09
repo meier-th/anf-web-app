@@ -15,7 +15,7 @@ export class FightPVP {
     pvpId: number;
     firstFighter: Character;
     secondFighter: Character;
-    fightDate: DataCue;
+    fightDate: Date;
     firstWon: boolean;
     ratingChange: number;
     biggerRatingChange: number;

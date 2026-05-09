@@ -16,21 +16,20 @@ import {Boss} from '../classes/boss';
 import {CharacterComponent} from '../character/character.component';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {MainComponent} from '../main/main.component';
-import {ConfirmationService, DialogService, DynamicDialogRef, MessageService} from 'primeng/api';
+import {ConfirmationService, MessageService} from 'primeng/api';
+import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Character} from '../classes/character';
-import {el} from '@angular/platform-browser/testing/src/browser_util';
-import {log} from 'util';
 import {animate, state, style, transition, trigger} from '@angular/animations';
-import * as SockJS from 'sockjs-client';
+import SockJS from 'sockjs-client';
 import {Stomp} from '@stomp/stompjs';
 import {Router} from '@angular/router';
 import {TranslateService} from '../services/translate.service';
 import {TranslatePipe} from '../services/translate.pipe';
-import {FocusTrap} from '@angular/cdk/typings/esm5/a11y';
 import {NinjaAnimal} from '../classes/ninja-animal';
 
 @Component({
   selector: 'app-fight',
+  standalone: false,
   templateUrl: './fight.component.html',
   styleUrls: ['./fight.component.less'],
   animations: [
@@ -81,7 +80,7 @@ export class FightComponent implements OnInit, OnDestroy {
   selectedSpell = 'Physical attack';
   map: { [key: string]: string } = {};
   used = 'physical';
-  timer: number;
+  timer: ReturnType<typeof setInterval>;
   current: string;
   kek = false;
   summonEnabled = true;
@@ -283,7 +282,6 @@ export class FightComponent implements OnInit, OnDestroy {
           let targetAnimal: NinjaAnimal;
           animalIsAttacker = fightState.attacker.length === 3 || fightState.attacker.length === 3;
           userIsAttacker = fightState.attacker.length >= 6;
-          bossIsAttacker = fightState.attacker.length === 1;
           if (userIsAttacker) {
             attackerUser = that.allies.find(all => all.login === fightState.attacker);
             bossIsAttacker = false;
@@ -629,27 +627,28 @@ export class FightComponent implements OnInit, OnDestroy {
 
   selectSpell(event: MouseEvent) {
     if (this.current === this.parent.login) {
+      const selectedSpell = (event.target as HTMLElement | null)?.id ?? 'Physical attack';
       const self: User = this.allies.find(all => all.login === this.parent.login);
-      if (event.srcElement.id === 'Air Strike' &&
+      if (selectedSpell === 'Air Strike' &&
         self.character.currentChakra <
         (70 + 10 * self.character.spellsKnown
           .find(sh => sh.spellUse.name === 'Air Strike').spellLevel) ||
-        event.srcElement.id === 'Fire Strike' &&
+        selectedSpell === 'Fire Strike' &&
         self.character.currentChakra <
         (40 + 5 * self.character.spellsKnown
           .find(sh => sh.spellUse.name === 'Fire Strike').spellLevel) ||
-        event.srcElement.id === 'Water Strike' &&
+        selectedSpell === 'Water Strike' &&
         self.character.currentChakra <
         (20 + 4 * self.character.spellsKnown
           .find(sh => sh.spellUse.name === 'Water Strike').spellLevel) ||
-        event.srcElement.id === 'Earth Strike' &&
+        selectedSpell === 'Earth Strike' &&
         self.character.currentChakra <
         (12 + 3 * self.character.spellsKnown
           .find(sh => sh.spellUse.name === 'Earth Strike').spellLevel)) {
         alert(this.transl.transform('Not enough chakra'));
         this.selectedSpell = 'Physical attack';
       } else {
-        this.selectedSpell = event.srcElement.id;
+        this.selectedSpell = selectedSpell;
       }
     } else {
       alert(this.transl.transform('Not your turn!'));

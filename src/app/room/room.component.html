@@ -3,6 +3,10 @@
     {{'You were invited to fight' | translate }}! <br>
     {{type}} : {{author}}
   </p>
-  <p-button *ngIf="!accepted" label="{{'Join' | translate}}" (onClick)="join()"></p-button>
-  <p *ngIf="accepted">{{'Wait for the fight' | translate }}</p>
+  @if (!accepted) {
+    <p-button label="{{'Join' | translate}}" (onClick)="join()"></p-button>
+  }
+  @if (accepted) {
+    <p>{{'Wait for the fight' | translate }}</p>
+  }
 </div>

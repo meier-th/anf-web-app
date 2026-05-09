@@ -4,11 +4,12 @@ import {Message} from '../classes/message';
 import {User} from '../classes/user';
 import {MainComponent} from '../main/main.component';
 import {Stomp} from '@stomp/stompjs';
-import * as SockJS from 'sockjs-client';
+import SockJS from 'sockjs-client';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 
 @Component({
   selector: 'app-messages',
+  standalone: false,
   templateUrl: './messages.component.html',
   styleUrls: ['./messages.component.less'],
   animations: [

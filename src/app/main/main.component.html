@@ -1,85 +1,128 @@
-<p-sidebar [(visible)]="display" styleClass="ui-sidebar-sm">
+@if (display) {
+  <div class="ui-sidebar-sm">
+    <button type="button" (click)="display = false">x</button>
   <div class="menu">
     <div class="pages" (click)="changeLanguage()">
       <p>
         {{'switch' | translate}}
       </p>
     </div>
-    <div *ngIf="router.url !== '/start'" class="pages" (click)="router.navigateByUrl('start')">
-      <p>{{'Main' | translate }}</p>
-    </div>
-    <div *ngIf="router.url === '/start'" class="pages" (click)="router.navigateByUrl('info')">
-      <p>{{'About project' | translate }}</p>
-    </div>
-    <div *ngIf="router.url === '/profile'" class="pages" (click)="router.navigateByUrl('messages')">
-      <p>{{'Messages' | translate }}</p>
-    </div>
-    <div *ngIf="loggedIn && router.url !== '/profile'" class="pages" (click)="router.navigateByUrl('profile')">
-      <p>{{'Profile' | translate }}</p>
-    </div>
-    <div *ngIf="loggedIn && router.url === '/profile'" class="pages" (click)="router.navigateByUrl('history')">
-      <p>{{'History' | translate }}</p>
-    </div>
-    <div *ngIf="loggedIn && router.url === '/profile'" class="pages" (click)="router.navigateByUrl('spells')">
-      <p>{{'Spells' | translate }}</p>
-    </div>
+    @if (router.url !== '/start') {
+      <div class="pages" (click)="router.navigateByUrl('start')">
+        <p>{{'Main' | translate }}</p>
+      </div>
+    }
+    @if (router.url === '/start') {
+      <div class="pages" (click)="router.navigateByUrl('info')">
+        <p>{{'About project' | translate }}</p>
+      </div>
+    }
+    @if (router.url === '/profile') {
+      <div class="pages" (click)="router.navigateByUrl('messages')">
+        <p>{{'Messages' | translate }}</p>
+      </div>
+    }
+    @if (loggedIn && router.url !== '/profile') {
+      <div class="pages" (click)="router.navigateByUrl('profile')">
+        <p>{{'Profile' | translate }}</p>
+      </div>
+    }
+    @if (loggedIn && router.url === '/profile') {
+      <div class="pages" (click)="router.navigateByUrl('history')">
+        <p>{{'History' | translate }}</p>
+      </div>
+    }
+    @if (loggedIn && router.url === '/profile') {
+      <div class="pages" (click)="router.navigateByUrl('spells')">
+        <p>{{'Spells' | translate }}</p>
+      </div>
+    }
   </div>
   <div class="login">
-    <p-button id="account-button" label="{{'Log in' | translate }}" *ngIf="!loggedIn"
-              (click)="showLoginBlock()"></p-button>
+    @if (!loggedIn) {
+      <p-button id="account-button" label="{{'Log in' | translate }}"
+      (click)="showLoginBlock()"></p-button>
+    }
   </div>
-  <div class="login" *ngIf="loggedIn"><br>
-    <p-button id="logout-button" label="{{'Log out' | translate }}" *ngIf="loggedIn" (click)="logout()"></p-button>
-  </div>
-  <div class="login" *ngIf="loggedIn">
-    <p id="login">{{login}}</p>
-  </div>
+  @if (loggedIn) {
+    <div class="login"><br>
+      @if (loggedIn) {
+        <p-button id="logout-button" label="{{'Log out' | translate }}" (click)="logout()"></p-button>
+      }
+    </div>
+  }
+  @if (loggedIn) {
+    <div class="login">
+      <p id="login">{{login}}</p>
+    </div>
+  }
   <p-confirmDialog></p-confirmDialog>
-</p-sidebar>
+  </div>
+}
 
 <div id="header">
   <img id="logo" src="../../assets/logo.png" (click)="router.navigateByUrl('start')"/>
   <!--<div id="lang">-->
 
-  <!--</div>-->
-  <img id = "showMenuButton" src="../../assets/menuButton.png" (click)="display = true"/>
-    
-  <div class="menu">
-    <div class="pages" (click)="changeLanguage()">
-      <p>
-        {{'switch' | translate}}
-      </p>
-    </div>
-    <div *ngIf="router.url !== '/start'" class="pages" (click)="router.navigateByUrl('start')">
+<!--</div>-->
+<img id = "showMenuButton" src="../../assets/menuButton.png" (click)="display = true"/>
+
+<div class="menu">
+  <div class="pages" (click)="changeLanguage()">
+    <p>
+      {{'switch' | translate}}
+    </p>
+  </div>
+  @if (router.url !== '/start') {
+    <div class="pages" (click)="router.navigateByUrl('start')">
       <p>{{'Main' | translate }}</p>
     </div>
-    <div *ngIf="router.url === '/start'" class="pages" (click)="router.navigateByUrl('info')">
+  }
+  @if (router.url === '/start') {
+    <div class="pages" (click)="router.navigateByUrl('info')">
       <p>{{'About project' | translate }}</p>
     </div>
-    <div *ngIf="router.url === '/profile'" class="pages" (click)="router.navigateByUrl('messages')">
+  }
+  @if (router.url === '/profile') {
+    <div class="pages" (click)="router.navigateByUrl('messages')">
       <p>{{'Messages' | translate }}</p>
     </div>
-    <div *ngIf="loggedIn && router.url !== '/profile'" class="pages" (click)="router.navigateByUrl('profile')">
+  }
+  @if (loggedIn && router.url !== '/profile') {
+    <div class="pages" (click)="router.navigateByUrl('profile')">
       <p>{{'Profile' | translate }}</p>
     </div>
-    <div *ngIf="loggedIn && router.url === '/profile'" class="pages" (click)="router.navigateByUrl('history')">
+  }
+  @if (loggedIn && router.url === '/profile') {
+    <div class="pages" (click)="router.navigateByUrl('history')">
       <p>{{'History' | translate }}</p>
     </div>
-    <div *ngIf="loggedIn && router.url === '/profile'" class="pages" (click)="router.navigateByUrl('spells')">
+  }
+  @if (loggedIn && router.url === '/profile') {
+    <div class="pages" (click)="router.navigateByUrl('spells')">
       <p>{{'Spells' | translate }}</p>
     </div>
+  }
+</div>
+<div class="login">
+  @if (!loggedIn) {
+    <p-button id="account-button" label="{{'Log in' | translate }}"
+    (click)="showLoginBlock()"></p-button>
+  }
+</div>
+@if (loggedIn) {
+  <div class="login"><br>
+    @if (loggedIn) {
+      <p-button id="logout-button" label="{{'Log out' | translate }}" (click)="logout()"></p-button>
+    }
   </div>
+}
+@if (loggedIn) {
   <div class="login">
-    <p-button id="account-button" label="{{'Log in' | translate }}" *ngIf="!loggedIn"
-              (click)="showLoginBlock()"></p-button>
-  </div>
-  <div class="login" *ngIf="loggedIn"><br>
-    <p-button id="logout-button" label="{{'Log out' | translate }}" *ngIf="loggedIn" (click)="logout()"></p-button>
-  </div>
-  <div class="login" *ngIf="loggedIn">
     <p id="login">{{login}}</p>
   </div>
-  <p-confirmDialog></p-confirmDialog>
+}
+<p-confirmDialog></p-confirmDialog>
 </div>
 <div id="content">
   <router-outlet></router-outlet>

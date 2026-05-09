@@ -4,20 +4,17 @@ import {AppRoutingModule} from './app-routing.module';
 import {MainComponent} from './main/main.component';
 import {StartPageComponent} from './start-page/start-page.component';
 import {ButtonModule} from 'primeng/button';
-import {TabViewModule} from 'primeng/tabview';
 import {InfoPageComponent} from './info-page/info-page.component';
 import {DynamicDialogModule} from 'primeng/dynamicdialog';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {AuthComponent} from './auth/auth.component';
-import {
-  TabMenuModule,
-  PasswordModule,
-  InputTextModule,
-  MessageService,
-  InputSwitchModule,
-  RadioButtonModule,
-  PickListModule, ConfirmDialogModule, TooltipModule, SidebarModule
-} from 'primeng/primeng';
+import {PasswordModule} from 'primeng/password';
+import {InputTextModule} from 'primeng/inputtext';
+import {MessageService} from 'primeng/api';
+import {RadioButtonModule} from 'primeng/radiobutton';
+import {PickListModule} from 'primeng/picklist';
+import {ConfirmDialogModule} from 'primeng/confirmdialog';
+import {TooltipModule} from 'primeng/tooltip';
 import {ProfilePageComponent} from './profile-page/profile-page.component';
 import {HttpClientModule} from '@angular/common/http';
 import {CookieService} from 'ngx-cookie-service';
@@ -74,20 +71,16 @@ export function setupTranslateFactory(
     HttpClientModule,
     AppRoutingModule,
     ButtonModule,
-    TabViewModule,
     DynamicDialogModule,
     BrowserAnimationsModule,
-    TabMenuModule,
     PasswordModule,
     InputTextModule,
     FormsModule,
     ToastModule,
-    InputSwitchModule,
     RadioButtonModule,
     PickListModule,
     ConfirmDialogModule,
-    TooltipModule,
-    SidebarModule
+    TooltipModule
   ],
   providers: [CookieService, MessageService, TranslatePipe, TranslateService,
     {
@@ -96,15 +89,7 @@ export function setupTranslateFactory(
       deps: [TranslateService],
       multi: true
     }],
-  bootstrap: [MainComponent],
-  entryComponents: [
-    AuthComponent,
-    QueueComponent,
-    SingleMessageComponent,
-    CharacterComponent,
-    RoomComponent,
-    AnimalRaceChoiceComponent,
-    FightResultComponent]
+  bootstrap: [MainComponent]
 })
 export class AppModule {
 }

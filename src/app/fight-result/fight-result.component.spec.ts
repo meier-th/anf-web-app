@@ -8,8 +8,8 @@ describe('FightResultComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ FightResultComponent ]
-    })
+    imports: [FightResultComponent]
+})
     .compileComponents();
   }));
 
