@@ -1,16 +1,15 @@
 import 'hammerjs';
-import {enableProdMode} from '@angular/core';
+import {enableProdMode, provideZoneChangeDetection} from '@angular/core';
 import {platformBrowserDynamic} from '@angular/platform-browser-dynamic';
 
 import {AppModule} from './app/app.module';
 import {environment} from './environments/environment';
-import {log} from 'util';
 
 if (environment.production) {
   enableProdMode();
 }
 
-platformBrowserDynamic().bootstrapModule(AppModule)
+platformBrowserDynamic().bootstrapModule(AppModule, { applicationProviders: [provideZoneChangeDetection()], })
   .catch(err => console.error(err));
 
 // window.onmousewheel = (event: WheelEvent) => {

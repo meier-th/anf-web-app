@@ -1,49 +1,67 @@
 <div class="friendsList">
-  <p-tabView>
-    <p-tabPanel header="{{'Friends' | translate}}">
+  <div class="tabs">
+    <button type="button" (click)="selectedTab = 'friends'">{{'Friends' | translate}}</button>
+    <button type="button" (click)="selectedTab = 'incoming'">{{'In' | translate}}</button>
+    <button type="button" (click)="selectedTab = 'outgoing'">{{'Out' | translate}}</button>
+  </div>
+  @if (selectedTab === 'friends') {
       <div class="onePage">
-        <label *ngIf="friends.length == 0">{{'No friends yet' | translate}}</label>
+        @if (friends.length == 0) {
+          <label>{{'No friends yet' | translate}}</label>
+        }
         <ul class="list">
-          <li *ngFor="let friend of friends">
-            <div class="userdata">{{friend.login}}
-              <label *ngIf="friend.online" class="online">⚫</label>
-              <label *ngIf="friend.offline" class="offline">⚫</label><br>
-              <!--<p-button *ngIf="friend.online" class="invite" (click)="inviteToPVP(friend)">{{'Invite to Fight' | translate }}
-              </p-button>
-              <br *ngIf="friend.online">-->
-              <p-button class="invite" (click)="showMessageInput(friend)" label="{{'message' | translate}}"></p-button>
-              <br>
-              <p-button class="decline" (click)="deleteFriend(friend)" label="{{'delete' | translate}}"></p-button>
-            </div>
-
-          </li>
+          @for (friend of friends; track friend) {
+            <li>
+              <div class="userdata">{{friend.login}}
+                @if (friend.online) {
+                  <label class="online">⚫</label>
+                }
+                @if (friend.offline) {
+                  <label class="offline">⚫</label>
+                  }<br>
+                  <!--<p-button *ngIf="friend.online" class="invite" (click)="inviteToPVP(friend)">{{'Invite to Fight' | translate }}
+                </p-button>
+                <br *ngIf="friend.online">-->
+                <p-button class="invite" (click)="showMessageInput(friend)" label="{{'message' | translate}}"></p-button>
+                <br>
+                  <p-button class="decline" (click)="deleteFriend(friend)" label="{{'delete' | translate}}"></p-button>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+  }
+  @if (selectedTab === 'incoming') {
+        <div class="onePage">
+          @if (inRequested.length == 0) {
+            <label>{{'No requests yet' | translate}}</label>
+          }
+          <ul class="list">
+            @for (inReq of inRequested; track inReq) {
+              <li>
+                <span class="login">{{inReq.login}}</span><span class="buttons">
+                <p-button (click)="addFriend(inReq)" class="accept">{{'Accept' | translate }}</p-button>
+                <p-button (click)="declineReq(inReq)" class="decline">{{'Decline' | translate }}</p-button>
+              </span>
+            </li>
+          }
         </ul>
       </div>
-    </p-tabPanel>
-    <p-tabPanel header="{{'In' | translate}}">
+  }
+  @if (selectedTab === 'outgoing') {
       <div class="onePage">
-        <label *ngIf="inRequested.length == 0">{{'No requests yet' | translate}}</label>
+        @if (outRequested.length == 0) {
+          <label>{{'No one is requested' | translate}}</label>
+        }
         <ul class="list">
-          <li *ngFor="let inReq of inRequested">
-            <span class="login">{{inReq.login}}</span><span class="buttons">
-      <p-button (click)="addFriend(inReq)" class="accept">{{'Accept' | translate }}</p-button>
-      <p-button (click)="declineReq(inReq)" class="decline">{{'Decline' | translate }}</p-button>
-    </span>
+          @for (outReq of outRequested; track outReq) {
+            <li>
+              <span class="login">{{outReq.login}}</span><span class="buttons">
+              <p-button (click)="deleteRequest(outReq)" class="decline">{{'Delete' | translate }}</p-button>
+            </span>
           </li>
-        </ul>
-      </div>
-    </p-tabPanel>
-    <p-tabPanel header="{{'Out' | translate}}">
-      <div class="onePage">
-        <label *ngIf="outRequested.length == 0">{{'No one is requested' | translate}}</label>
-        <ul class="list">
-          <li *ngFor="let outReq of outRequested">
-            <span class="login">{{outReq.login}}</span><span class="buttons">
-      <p-button (click)="deleteRequest(outReq)" class="decline">{{'Delete' | translate }}</p-button>
-    </span>
-          </li>
-        </ul>
-      </div>
-    </p-tabPanel>
-  </p-tabView>
+        }
+      </ul>
+    </div>
+  }
 </div>

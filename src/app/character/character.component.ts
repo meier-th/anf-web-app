@@ -3,6 +3,7 @@ import {User} from '../classes/user';
 
 @Component({
   selector: 'app-character',
+  standalone: false,
   templateUrl: './character.component.html',
   styleUrls: ['./character.component.less']
 })

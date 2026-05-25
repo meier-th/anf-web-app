@@ -1,12 +1,13 @@
 import {Component, OnInit} from '@angular/core';
 import {Stomp} from '@stomp/stompjs';
-import * as SockJS from 'sockjs-client';
+import SockJS from 'sockjs-client';
 import {ChatMessage} from '../classes/chat-message';
 import {HttpClient} from '@angular/common/http';
 import {User} from '../classes/user';
 
 @Component({
   selector: 'app-chat',
+  standalone: false,
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.less']
 })

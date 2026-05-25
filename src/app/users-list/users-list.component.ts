@@ -3,20 +3,23 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import {User} from '../classes/user';
 import { FriendsPageComponent } from '../friends-page/friends-page.component';
 import {SingleMessageComponent} from '../single-message/single-message.component';
-import {ConfirmationService, DialogService, DynamicDialogRef, MessageService} from 'primeng/api';
+import {ConfirmationService, MessageService} from 'primeng/api';
+import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import { SingleMessageService } from '../services/single-message.service';
 import {Stomp} from '@stomp/stompjs';
-import * as SockJS from 'sockjs-client';
+import SockJS from 'sockjs-client';
 import { Userdata } from '../classes/userdata';
 
 @Component({
   selector: 'app-users-list',
+  standalone: false,
   templateUrl: './users-list.component.html',
   styleUrls: ['./users-list.component.less'],
   providers: [DialogService, ConfirmationService]
 })
 export class UsersListComponent implements OnInit {
 
+  searchText = '';
   usersList: Userdata[];
   viewer: User;
   private stompClient;

@@ -8,8 +8,8 @@ describe('QueueComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ QueueComponent ]
-    })
+    imports: [QueueComponent]
+})
     .compileComponents();
   }));
 

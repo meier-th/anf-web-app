@@ -3,18 +3,20 @@ import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams, HttpRequest} fro
 import {User} from '../classes/user';
 import {Message} from '../classes/message';
 import {MainComponent} from '../main/main.component';
-import {DialogService, ConfirmationService, DynamicDialogRef} from 'primeng/api';
+import {ConfirmationService} from 'primeng/api';
+import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {QueueComponent} from '../queue/queue.component';
 import {AreaService} from '../services/area/area.service';
 import {Observable} from 'rxjs';
 import {CookieService} from 'ngx-cookie-service';
 import {Stomp} from '@stomp/stompjs';
 import {AnimalRaceChoiceComponent} from '../animal-race-choice/animal-race-choice.component';
-import * as SockJS from 'sockjs-client';
+import SockJS from 'sockjs-client';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 
 @Component({
   selector: 'app-profile-page',
+  standalone: false,
   templateUrl: './profile-page.component.html',
   styleUrls: ['./profile-page.component.less'],
   providers: [DialogService, ConfirmationService],
@@ -67,9 +69,9 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   public friends: string[];
   public parent = this.injector.get(MainComponent);
   public ready = false;
+  public checked = false;
   dialog: DynamicDialogRef;
   private stompClient;
-  private checked = false;
 
   constructor(private http: HttpClient, private injector: Injector,
               private dialogService: DialogService, private areaService: AreaService,

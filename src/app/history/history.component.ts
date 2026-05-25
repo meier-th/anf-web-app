@@ -6,6 +6,7 @@ import { PVPFight } from '../classes/pvpfight';
 
 @Component({
   selector: 'app-history',
+  standalone: false,
   templateUrl: './history.component.html',
   styleUrls: ['./history.component.less']
 })

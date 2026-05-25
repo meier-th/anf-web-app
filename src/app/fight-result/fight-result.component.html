@@ -1,5 +1,11 @@
 <h2>{{'results' | translate}}:</h2>
 <br>
-<div *ngIf="victory" class="win">{{'Win' | translate}}</div>
-<div *ngIf="death" class="yellow">{{'Death' | translate}}</div>
-<div *ngIf="loss" class="loss">{{'loss' | translate}}</div>
+  @if (victory) {
+    <div class="win">{{'Win' | translate}}</div>
+  }
+  @if (death) {
+    <div class="yellow">{{'Death' | translate}}</div>
+  }
+  @if (loss) {
+    <div class="loss">{{'loss' | translate}}</div>
+  }

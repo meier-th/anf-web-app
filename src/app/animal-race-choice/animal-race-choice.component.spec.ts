@@ -8,8 +8,8 @@ describe('AnimalRaceChoiceComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ AnimalRaceChoiceComponent ]
-    })
+    imports: [AnimalRaceChoiceComponent]
+})
     .compileComponents();
   }));
 

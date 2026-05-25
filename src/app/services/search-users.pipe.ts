@@ -2,7 +2,8 @@ import { Pipe, PipeTransform } from '@angular/core';
 import { Userdata } from '../classes/userdata';
 
 @Pipe({
-  name: 'searchUsers'
+  name: 'searchUsers',
+  standalone: false
 })
 export class SearchUsersPipe implements PipeTransform {
 

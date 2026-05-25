@@ -2,29 +2,33 @@
   <div class="container">
     <p class="label">{{'Attacks'| translate}}: </p>
     <div id="attacks" [@turn]="current === parent.login ? 'enabled' : 'disabled'">
-      <div class="attack" *ngFor="let skill of skills">
-        <div (click)="selectSpell($event)" pTooltip="{{map[skill]}}">
-          <img id="{{skill}}"
-               src="../../assets/elements/{{skill.substring(0, skill.indexOf(' ')).toLowerCase()}}.png">
-        </div>
+      @for (skill of skills; track skill) {
+        <div class="attack">
+          <div (click)="selectSpell($event)" pTooltip="{{map[skill]}}">
+            <img id="{{skill}}"
+              src="../../assets/elements/{{skill.substring(0, skill.indexOf(' ')).toLowerCase()}}.png">
+            </div>
+          </div>
+        }
+      </div>
+      @if (summonEnabled) {
+        <img id="summon" src="../../assets/summon.png" (click)="summon()"/>
+      }
+      <div id="turn">
+        <p id="current"></p>
+        <p id="timer"></p>
       </div>
     </div>
-    <img id="summon" src="../../assets/summon.png" *ngIf="summonEnabled" (click)="summon()"/>
-    <div id="turn">
-      <p id="current"></p>
-      <p id="timer"></p>
+    <div id="fighters">
+      <div class="ally">
+        <template #alliesContainer></template>
+      </div>
+      <div class="foe">
+        <template #enemiesContainer></template>
+      </div>
+    </div>
+    <div id="ground">
     </div>
   </div>
-  <div id="fighters">
-    <div class="ally">
-      <template #alliesContainer></template>
-    </div>
-    <div class="foe">
-      <template #enemiesContainer></template>
-    </div>
-  </div>
-  <div id="ground">
-  </div>
-</div>
-<img id="used" src="../../assets/elements/{{used}}.png"
-     [@attack]="kek ? 'use' : 'default'">
+  <img id="used" src="../../assets/elements/{{used}}.png"
+    [@attack]="kek ? 'use' : 'default'">

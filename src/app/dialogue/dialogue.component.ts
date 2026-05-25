@@ -4,10 +4,11 @@ import {HttpClient, HttpParams} from '@angular/common/http';
 import {MainComponent} from '../main/main.component';
 import {User} from '../classes/user';
 import {Stomp} from '@stomp/stompjs';
-import * as SockJS from 'sockjs-client';
+import SockJS from 'sockjs-client';
 
 @Component({
   selector: 'app-dialogue',
+  standalone: false,
   templateUrl: './dialogue.component.html',
   styleUrls: ['./dialogue.component.less']
 })

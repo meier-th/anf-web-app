@@ -4,6 +4,7 @@ import {ProfilePageComponent} from '../profile-page/profile-page.component';
 
 @Component({
   selector: 'app-animal-race-choice',
+  standalone: false,
   templateUrl: './animal-race-choice.component.html',
   styleUrls: ['./animal-race-choice.component.less']
 })

@@ -8,8 +8,8 @@ describe('FriendsPageComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ FriendsPageComponent ]
-    })
+    declarations: [FriendsPageComponent]
+})
     .compileComponents();
   }));
 

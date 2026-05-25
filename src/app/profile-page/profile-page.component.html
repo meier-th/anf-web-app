@@ -1,105 +1,122 @@
 <div class="section" id="userdata" [@load1]="checked? 'default': 'hidden'">
-  <div id="profile_info" *ngIf="loaded">
-    <div id="img_and_immutable">
-      <p>{{user.login}}</p><br>
-      <div id="avatar">
-        <app-character></app-character>
+  @if (loaded) {
+    <div id="profile_info">
+      <div id="img_and_immutable">
+        <p>{{user.login}}</p><br>
+        <div id="avatar">
+          <app-character></app-character>
+        </div>
+        <div id="user_parameters">
+          <label class="stats">{{'Level:' | translate}} {{user.stats.level}}</label><br>
+          <label class="stats">{{'Rating:' | translate}} {{user.stats.rating}}</label><br>
+          <label class="stats">{{'XP:' | translate }} {{user.stats.experience}}</label><br>
+          @if (user.character.animalRace != undefined) {
+            <label class="stats">{{'Animal Race:' | translate }} <br>
+            {{user.character.animalRace}}</label>
+          }
+          @if (user.character.animalRace == undefined) {
+            <label class="stats">{{'Animal Race:' | translate }} <br>
+              <p-button label="{{'Choose' | translate }}" (onClick)="chooseAnimalRace()"></p-button>
+            </label>
+          }
+        </div>
       </div>
-      <div id="user_parameters">
-        <label class="stats">{{'Level:' | translate}} {{user.stats.level}}</label><br>
-        <label class="stats">{{'Rating:' | translate}} {{user.stats.rating}}</label><br>
-        <label class="stats">{{'XP:' | translate }} {{user.stats.experience}}</label><br>
-        <label *ngIf="user.character.animalRace != undefined" class="stats">{{'Animal Race:' | translate }} <br>
-          {{user.character.animalRace}}</label>
-        <label *ngIf="user.character.animalRace == undefined" class="stats">{{'Animal Race:' | translate }} <br>
-          <p-button label="{{'Choose' | translate }}" (onClick)="chooseAnimalRace()"></p-button>
-        </label>
+      <div class="scroll">
+        @if (loaded) {
+          <div id="stats">
+            <!--<label class="stats">Email:</label>
+            <label class="stats" *ngIf ="user.email != undefined">{{user.email}}</label>
+            <label class="stats" *ngIf="user.email == undefined">
+              <p-button label="{{'Add' | translate}}" (onClick)="addEmail()"></p-button> <br>
+            </label>-->
+            <label class="stats">{{'Number of fights:' | translate }} {{user.stats.fights}}</label><br>
+            <label class="stats">{{'Number of wins:' | translate }} {{user.stats.wins}}</label><br>
+            <label class="stats">{{'Number of losses:' | translate }} {{user.stats.losses}}</label><br>
+            <label class="stats">{{'Number of deaths:' | translate }} {{user.stats.deaths}}</label><br>
+            <label class="stats">{{'Upgrade points:' | translate}}{{user.stats.upgradePoints}}</label>
+          </div>
+        }
+        @if (loaded) {
+          <div class="upgradable">
+            <label class="stats">{{'Damage' | translate}}: {{user.character.physicalDamage}}
+              @if (user.stats.upgradePoints > 0) {
+                <button (click)="upgrade('damage')">+</button>
+              }
+            </label><br>
+            <label class="stats">{{'Max HP' | translate}}: {{user.character.maxHp}}
+              @if (user.stats.upgradePoints > 0) {
+                <button (click)="upgrade('hp')">+</button>
+              }
+            </label><br>
+            <label class="stats">{{'Max chakra' | translate}}: {{user.character.maxChakra}}
+              @if (user.stats.upgradePoints > 0) {
+                <button (click)="upgrade('chakra')">+</button>
+              }
+            </label><br>
+            <label class="stats">{{'Resistance' | translate}}: {{user.character.resistance}}
+              @if (user.stats.upgradePoints > 0) {
+                <button (click)="upgrade('resistance')">+</button>
+              }
+            </label><br>
+          </div>
+        }
       </div>
-    </div>
-    <div class="scroll">
-      <div id="stats" *ngIf="loaded">
-        <!--<label class="stats">Email:</label>
-        <label class="stats" *ngIf ="user.email != undefined">{{user.email}}</label>
-        <label class="stats" *ngIf="user.email == undefined">
-        <p-button label="{{'Add' | translate}}" (onClick)="addEmail()"></p-button> <br>
-        </label>-->
-        <label class="stats">{{'Number of fights:' | translate }} {{user.stats.fights}}</label><br>
-        <label class="stats">{{'Number of wins:' | translate }} {{user.stats.wins}}</label><br>
-        <label class="stats">{{'Number of losses:' | translate }} {{user.stats.losses}}</label><br>
-        <label class="stats">{{'Number of deaths:' | translate }} {{user.stats.deaths}}</label><br>
-        <label class="stats">{{'Upgrade points:' | translate}}{{user.stats.upgradePoints}}</label>
+      <div class="vertical">
+        <input type="checkbox" [(ngModel)]="ready" (change)="changeReadyState()">
+        {{ready ? ('Ready'| translate) : ('Not ready' | translate )}}
+        <br>
+          <app-friends-page></app-friends-page>
+        </div>
       </div>
-      <div class="upgradable" *ngIf="loaded">
-        <label class="stats">{{'Damage' | translate}}: {{user.character.physicalDamage}}
-          <button *ngIf="user.stats.upgradePoints > 0" (click)="upgrade('damage')">+</button>
-        </label><br>
-        <label class="stats">{{'Max HP' | translate}}: {{user.character.maxHp}}
-          <button *ngIf="user.stats.upgradePoints > 0" (click)="upgrade('hp')">+</button>
-        </label><br>
-        <label class="stats">{{'Max chakra' | translate}}: {{user.character.maxChakra}}
-          <button *ngIf="user.stats.upgradePoints > 0" (click)="upgrade('chakra')">+</button>
-        </label><br>
-        <label class="stats">{{'Resistance' | translate}}: {{user.character.resistance}}
-          <button *ngIf="user.stats.upgradePoints > 0" (click)="upgrade('resistance')">+</button>
-        </label><br>
-      </div>
-    </div>
-    <div class="vertical">
-      <p-inputSwitch [(ngModel)]="ready" (onChange)="changeReadyState()"></p-inputSwitch>
-      {{ready ? ('Ready'| translate) : ('Not ready' | translate )}}
-      <br>
-      <app-friends-page></app-friends-page>
-    </div>
+    }
   </div>
-</div>
 
-<div class="section" id="nav" *ngIf="loaded" [@load2]="checked? 'default': 'hidden'">
-  <svg viewBox="0 0 1500 882" id="map">
-
-    <path class="region"
+  @if (loaded) {
+    <div class="section" id="nav" [@load2]="checked? 'default': 'hidden'">
+      <svg viewBox="0 0 1500 882" id="map">
+        <path class="region"
           style="fill:#99b3cc;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:4.9867568;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
           d="m -1497.4335,-879.65387 1494.8668496,0 0,877.0872806 -1494.8668496,0 0,-877.0872806 z"
           id="rect3552"
-          transform="scale(-1,-1)"></path>
-    <path class="ground"
+        transform="scale(-1,-1)"></path>
+        <path class="ground"
           style="fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:3.07989478;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
           d="m 509.58757,267.97545 -1.06729,10.52038 -2.4395,9.91052 -1.67718,7.16606 -3.20185,4.57409 -2.4395,15.39941 -0.60988,12.35003 -2.59199,3.65926 -5.0315,0.91481 -7.47097,6.70866 -1.21976,4.26916 -0.15248,6.4037 1.98211,3.5068 -0.76236,8.23335 -2.13456,2.89692 -1.06729,11.74016 -0.91483,2.74443 5.33643,6.09879 -0.49551,4.38349 -3.62116,3.69738 0.60988,6.86114 8.23335,15.39941 1.82963,4.87901 3.69739,-3.3162 3.08751,0.38118 5.18396,1.41033 6.86112,-0.57175 2.97316,-1.18164 2.2108,-4.34538 5.33643,-0.22871 9.83429,12.80744 6.78488,-0.10246 3.88797,-1.49852 6.47994,4.57408 8.53829,5.18396 4.42161,-2.36328 6.17502,-4.87902 3.81174,-1.06729 7.16606,3.20187 4.95525,0.2287 4.04044,-3.12563 2.51574,-1.14352 -0.99103,-7.16606 -2.97317,-3.7355 0.0763,-5.41267 -1.29599,-1.14352 0.15248,-5.26019 2.2108,-2.97316 0.15247,-6.32747 -0.91481,-3.5068 -2.82069,-3.04939 0.76235,-3.65928 -2.51574,-7.92842 -1.296,-5.87005 -1.14351,-11.35898 -1.7153,-3.88798 -0.53364,-6.70864 4.65032,-5.98444 3.93883,-3.97432 -0.53907,-3.61172 -2.85702,-7.1695 2.31796,-2.64141 4.68983,-3.88124 3.12655,-5.98357 0.37735,-3.55781 -4.4203,-4.90544 -2.6953,-4.09685 1.34765,-5.01328 2.80312,-4.58202 2.85702,-6.95388 2.37186,-4.04296 0.70077,-5.82185 -5.06715,-0.21564 -6.57655,-1.40154 -8.62497,-0.43126 -11.53591,-0.9703 -10.24216,-3.12657 -11.64371,0.10782 -12.61402,-0.64687 -9.16403,0.21562 -3.93514,-1.83281 -5.47577,2.22877 z"
-          id="Takigakure"></path>
-
-    <path class="ground"
+        id="Takigakure"></path>
+        <path class="ground"
           style="fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:3.07989478;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
           d="m 889.65574,870.0839 1.44156,-5.95294 0.45742,-5.79383 4.57408,-5.4889 3.20186,-8.08089 0.76234,-8.69075 1.21976,-5.94631 4.26914,-3.5068 6.40372,-2.13456 5.33642,-6.40372 7.59222,-8.38583 -0.91482,-2.59196 -0.9148,-7.01361 0.9148,-1.82964 0.45742,-4.72654 -2.74446,-4.5741 0.30495,-4.11667 2.13457,-3.65926 0.76234,-3.96421 -0.4574,-2.74445 -3.35433,-5.18396 -8.08089,-8.84322 0.15247,-2.89691 3.81174,-3.0494 0,-3.20186 2.28704,-2.59199 0.4574,-3.81172 2.43951,-2.74446 1.5247,-4.57408 0.45742,-4.57409 -0.45742,-4.87901 -5.91505,-2.89692 -2.28703,2.74444 -7.62348,1.82963 -9.45309,1.21976 -7.62347,-2.4395 -1.5247,-5.4889 -2.89691,-2.89692 -4.87904,-2.28705 -3.35432,-2.59198 1.06728,-5.64137 4.11666,-6.25125 2.74448,-2.89691 -0.15249,-6.40373 0.23344,0.2925 -1.83809,-6.12697 1.53174,-11.94758 6.12697,-8.2714 3.36982,-5.82063 -1.36978,-8.68889 0.76501,-8.87411 4.29327,-8.50129 3.9642,-3.5068 6.25125,-6.86112 -1.06729,-4.11669 2.43951,-3.81172 1.21975,-7.92842 0.30494,-7.92842 1.67716,-4.87903 -0.60987,-5.33642 -4.87903,-7.92841 -4.91026,-5.33645 -5.03149,-0.76234 -5.18396,-1.82962 -3.65925,-3.5068 -0.45743,-6.09878 -1.67717,-2.28704 0,-10.36792 0.30495,-7.16606 1.82965,-5.64138 0.15245,-7.01359 -1.37222,-0.60987 -4.72655,-4.11667 -0.15248,-2.74447 -3.81173,-3.20186 -3.50681,-5.48889 -4.42161,-5.64136 -6.55618,-5.79385 -6.70866,-5.64138 -5.4889,-6.70865 -7.16605,-7.77594 -3.35432,-5.03148 -2.13457,-6.70867 -2.43952,-1.52468 -4.42162,0.60987 -5.03148,2.59198 -5.0315,0.30493 -5.64137,-2.89691 -4.11668,-2.89692 -3.20186,0 -4.57408,3.81173 -2.43951,2.89694 -4.11667,-1.37224 -3.35432,-3.5068 -2.89692,-0.15247 -3.04939,-8.23334 -1.06728,-5.18396 0.30492,-9.91051 0.60989,-6.40372 -2.74444,-1.82963 -3.65927,-4.26916 -5.64138,-6.09879 -2.74444,0.45742 -3.81175,1.67717 -4.72654,3.20187 -5.33643,-0.45743 -3.65927,-4.11667 -7.31853,-0.15247 -5.9463,2.28704 -4.11668,1.21976 -3.65927,0 -7.31853,-4.72655 -4.26915,-0.60988 -6.09877,-5.94631 -7.47101,-1.67716 -4.72655,-1.06728 -5.33642,3.20186 -8.53829,2.59196 -12.50251,1.21977 -4.879,1.67716 -3.81173,-2.59197 -3.5068,3.50678 -4.42162,2.28705 -3.9642,-2.13456 -2.89692,-6.40373 -7.47101,-3.20185 -7.01358,-2.89692 -3.65927,-3.35433 -10.04106,-2.08269 -4.52812,-0.21562 -4.31249,2.58749 -4.95935,3.66563 -4.3125,3.23435 -4.09686,0.43126 -4.31248,2.15624 -4.09686,-0.21563 -4.95937,-0.43123 -4.31465,0.78071 -2.51574,1.14352 -4.04044,3.12563 -4.95525,-0.2287 -7.16606,-3.20187 -3.81174,1.06729 -6.17502,4.87902 -4.42161,2.36328 -8.53829,-5.18396 -6.47994,-4.57408 -3.88797,1.49852 -6.78488,0.10246 -9.83429,-12.80744 -5.33643,0.22872 -2.2108,4.34537 -2.97316,1.18164 -6.86112,0.57175 -5.18396,-1.41033 -3.08751,-0.38118 -3.69739,3.3162 -2.59197,3.65928 -5.79384,8.84321 -7.31853,8.84324 -5.79384,4.87902 -3.32306,4.42162 -3.84301,0.30492 0.60988,7.92842 1.98211,10.06299 5.33643,9.45311 -0.91481,14.48459 -0.91483,12.5025 1.37223,6.40372 5.79384,8.08087 7.92841,10.06298 2.74445,8.53829 -1.82965,7.16608 -3.04937,8.23335 -1.9821,7.16606 -1.52471,4.87901 -2.74444,1.82965 -0.60987,6.70864 1.21975,8.23335 2.74444,5.79384 1.5247,5.33642 3.20185,5.64138 1.67718,6.5562 3.20185,7.31852 2.28703,1.9821 6.55619,0.91482 5.64138,0.15248 3.50678,1.67715 4.57408,1.37222 6.16633,8.59659 7.1156,6.68436 11.42808,0.43125 12.07496,17.03431 6.03749,9.05624 10.99684,10.99684 4.57649,6.51103 8.99571,11.13028 3.50679,3.65926 1.21976,3.04939 3.04938,4.11668 3.0494,5.33643 5.33642,10.06297 1.52468,4.11668 -0.30493,7.16606 -1.21975,4.42162 -1.37222,6.25124 -0.91481,5.94631 0.30492,3.65927 -1.37222,4.42162 -1.05528,8.75409 1.83602,11.93414 2.44802,7.65011 0,7.0381 -4.28404,3.67205 -1.224,6.12007 -5.20208,3.06004 -0.612,7.9561 4.4224,4.34354 3.36602,0.612 0.91482,3.96422 1.9821,4.11667 0.45743,3.65925 9.78927,-2.28703 5.03151,-1.5247 7.47098,-5.64137 3.35435,-5.03149 6.20465,-6.64815 4.28406,-6.88509 2.75404,-8.87411 9.48613,-9.33312 7.80309,-6.27307 6.12007,-3.21305 3.67205,-7.19109 0.91802,-7.49711 3.36603,-4.43705 5.43156,-0.918 6.19659,1.37701 12.54617,2.75404 12.69915,2.44802 7.49709,-2.75403 9.33312,-2.14204 13.53299,3.88028 5.25169,2.18979 11.58769,5.64138 3.35431,0.15245 8.38582,-6.70865 8.08088,1.9821 4.87902,0.91482 9.91052,-7.77594 4.26913,-0.76235 3.65927,-1.9821 8.08089,0.76234 10.97778,-2.59198 12.04509,-2.13457 4.72655,-1.21975 4.72656,6.25124 3.9642,5.94631 4.57408,6.09878 4.5741,5.18397 6.09876,-1.98212 5.18396,-0.4574 3.35433,4.42161 3.65928,4.5741 -2.89694,6.40371 -4.26913,4.26913 -1.06729,10.52041 -5.94631,5.03148 -7.9284,4.26915 -8.84323,1.82964 -7.62348,4.57407 -8.84321,0.60988 -3.81175,2.89692 -5.9463,2.89693 -5.48889,5.03148 -2.74446,7.77594 -1.9821,9.75805 -4.57409,7.31853 -1.37222,2.43952 -3.65927,1.06728 -2.43951,0.30493 -2.28704,8.0809 -0.30494,5.9463 -1.37222,5.49553 3.36583,4.37424 1.58126,5.19558 104.36359,0 1.31277,-9.56988 z"
-          id="Konohagakure"></path>
-    <path class="ground"
+        id="Konohagakure"></path>
+        <path class="ground"
           style="fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:3.07989478;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
           d="m 415.26784,2.5665874 3.63169,6.0583311 1.21976,4.2691505 3.0494,2.744447 1.06727,5.488898 9.60558,11.130271 0.30493,4.421615 -1.52469,5.183964 -3.20186,5.641363 -2.43952,6.098785 -1.06727,3.201849 3.81174,5.488908 5.48889,5.336429 6.09877,7.623466 1.67717,5.336441 1.21975,5.793827 -2.43951,17.076578 -2.43952,2.89693 -0.45739,4.87902 2.4395,5.48889 0,14.94201 -3.20185,3.50679 -4.42161,7.47101 -4.72657,4.57409 -7.62346,6.86111 0,7.62348 -0.30495,4.72655 1.21976,2.28705 -0.76233,4.72656 0,4.57407 5.48888,5.33643 0.60989,4.72656 1.67716,8.38581 1.82964,5.94631 3.50679,2.4395 5.33643,0.76235 5.48889,2.59199 5.94632,7.31853 3.35433,6.55619 4.57408,8.69075 8.84322,0.30494 6.55619,0 4.57408,-1.06729 -0.45741,-4.4216 0.76235,-6.86114 4.57407,-6.4037 5.79385,-3.35433 5.18396,0.76235 5.33643,5.48889 3.96419,2.74445 6.40373,-2.59197 7.16606,-2.28705 10.21546,-1.21975 5.9463,0.76235 3.35433,6.40372 1.37223,7.9284 -2.74445,5.94632 -4.57409,4.72655 -1.82962,2.89691 -11.13028,2.13458 -5.94631,3.35433 0.60988,5.18396 2.4395,1.98209 -1.21976,3.81173 0.5655,8.74904 -5.47577,2.22878 -1.06729,10.52038 -2.4395,9.91052 -1.67718,7.16606 -3.20185,4.57409 -2.4395,15.39941 -0.60988,12.35003 -2.59199,3.65926 -5.0315,0.91481 -7.47097,6.70866 -1.21976,4.26916 -0.15248,6.4037 1.98211,3.5068 -0.76236,8.23335 -2.13456,2.89692 -1.06729,11.74016 -0.91483,2.74443 5.33643,6.09879 -0.49551,4.38349 -3.62116,3.69738 -8.38582,3.20186 -7.47099,3.35432 -4.57409,13.11238 -4.26914,4.57409 -4.42161,1.37222 -5.18397,5.94631 -3.65925,10.21546 -9.75803,3.81172 -10.97782,0.30495 -7.01359,3.9642 -8.84324,6.86113 -0.60987,2.59198 -2.72538,0.19058 -2.87786,0.89577 -2.63011,1.35317 -6.40371,0.15245 -4.57408,1.82964 -3.65926,3.35433 -6.86115,7.01361 -4.72652,0.4574 -5.94632,-2.43951 -5.18396,0 -5.64136,1.37223 -7.47102,4.87901 -7.31853,2.13457 -6.12274,0.27527 -10.34998,-1.725 -6.89997,0 -4.52811,4.3125 -3.45,0 -1.94061,-1.29376 -6.03749,0.43125 -3.66561,-1.07812 -3.88124,-0.43124 -2.15624,-1.07813 -8.4422,1.94177 -12.24017,2.44804 -11.32214,-1.22404 -13.46417,-2.14202 -10.71013,-6.42608 -6.91839,-6.27837 -5.20793,-7.04601 -0.61268,-7.35236 -4.28889,-5.20792 -4.59522,-6.43331 -6.43332,-3.98252 -6.12697,-0.30636 -2.45078,-6.12697 0,-6.4333 -4.90158,-3.98253 -0.30635,-4.90157 -6.73965,-3.06348 -22.05708,0 -18.3809,2.14443 -25.12056,1.22539 -26.958656,-1.22539 -10.415844,0.91905 -12.253923,-1.53174 -8.577753,-3.06349 -8.884102,-5.51427 -14.092023,-1.83809 -14.70472,1.53174 -11.947584,4.28888 -9.069536,1.14084 0,-402.0632226 412.701261,0 z"
-          id="Ivagakure"></path>
-    <path class="ground"
+        id="Ivagakure"></path>
+        <path class="ground"
           style="fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:3.07989478;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
           d="m 691.33111,340.39842 -2.89691,8.08089 -5.18395,7.31854 -7.16608,1.52468 -2.59197,3.96421 -1.67717,6.09877 -1.82963,4.87903 -4.11667,5.33643 -5.48891,3.20186 -5.94631,3.0494 -1.67715,2.59196 0.15246,9.45312 -3.50681,2.89692 -4.87901,0.4574 -2.59196,4.26914 -1.37224,8.9957 -1.9821,1.82964 3.65927,3.35433 7.01358,2.89692 7.47101,3.20185 2.89692,6.40373 3.9642,2.13456 4.42162,-2.28705 3.5068,-3.50678 3.81173,2.59197 4.879,-1.67716 12.50251,-1.21977 8.53829,-2.59196 5.33642,-3.20186 4.72655,1.06728 7.47101,1.67716 6.09877,5.94631 4.26915,0.60988 0.60988,-14.02717 -1.52469,-2.13459 -0.15248,-6.09877 -3.04939,-8.99571 -1.82963,-4.57408 2.28705,-5.64136 3.35432,-6.09877 0,-2.74446 -1.5247,-5.03149 -0.30493,-2.59197 0.91482,-3.04942 3.65926,-5.79383 2.74445,-3.35433 0.15248,-8.38581 -1.06729,-8.08088 -1.37223,-6.09878 -5.4889,-1.06729 -6.40372,1.67717 -11.58768,-0.30494 -4.86567,0.30613 -5.50225,-1.22094 -4.72654,-0.30494 -2.13458,4.26913 z"
-          id="Otogakure"></path>
-    <path class="ground"
+        id="Otogakure"></path>
+        <path class="ground"
           style="fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:3.07989478;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
           d="m 404.84108,452.46347 0.30495,4.42161 3.35432,6.70865 1.90586,6.78489 -0.99104,8.46206 -4.49785,7.0136 -4.04044,9.30062 5.9463,4.87904 6.25126,2.59198 -3.9642,11.13025 3.65925,2.59199 7.77595,-0.30493 15.39941,13.56978 16.16175,-7.62347 2.89693,-2.28705 8.08087,-1.37223 8.99569,1.98211 3.20187,-0.15247 -5.79384,-8.08087 -1.37223,-6.40372 0.91483,-12.5025 0.91481,-14.4846 -5.33643,-9.4531 -1.98211,-10.06299 -0.60988,-7.92842 3.84301,-0.30492 3.32306,-4.42162 5.79384,-4.87902 7.31853,-8.84324 5.79384,-8.84321 2.59197,-3.65928 -1.82963,-4.87901 -4.26913,-7.92841 -3.96422,-7.471 -0.60988,-6.86114 -8.38582,3.20186 -7.47099,3.35432 -4.57409,13.11238 -4.26914,4.57409 -4.42161,1.37222 -5.18397,5.94631 -3.65925,10.21546 -9.75803,3.81172 -10.97782,0.30495 -7.01359,3.9642 -8.84324,6.86113 -0.60987,2.59198 z"
-          id="Kusagakure"></path>
+        id="Kusagakure"></path>
+        <use xlink:href="../../assets/map.svg#svg2"></use>
+        <image id="Kurama" class="bidju" xlink:href="../../assets/bidju/9.png" x="480" y="450" height="125"
+        width="125"></image>
+        <image id="Isobu" class="bidju" xlink:href="../../assets/bidju/3.png" x="1030" y="500" height="125"
+        width="125"></image>
+        <image id="Gyuki" class="bidju" xlink:href="../../assets/bidju/8.png" x="210" y="310" height="125"
+        width="125"></image>
+        <image id="Shukaku" class="bidju" xlink:href="../../assets/bidju/1.png" x="210" y="510" height="125"
+        width="125"></image>
+      </svg>
+    </div>
+  }
 
-
-    <use xlink:href="../../assets/map.svg#svg2"></use>
-    <image id="Kurama" class="bidju" xlink:href="../../assets/bidju/9.png" x="480" y="450" height="125"
-           width="125"></image>
-    <image id="Isobu" class="bidju" xlink:href="../../assets/bidju/3.png" x="1030" y="500" height="125"
-           width="125"></image>
-    <image id="Gyuki" class="bidju" xlink:href="../../assets/bidju/8.png" x="210" y="310" height="125"
-           width="125"></image>
-    <image id="Shukaku" class="bidju" xlink:href="../../assets/bidju/1.png" x="210" y="510" height="125"
-           width="125"></image>
-  </svg>
-</div>
-
-<div class="section" *ngIf="loaded" id="comm" [@load3]="checked? 'default': 'hidden'">
-  <div id="chad">
-    <app-chat></app-chat>
-  </div>
-  <app-users-list></app-users-list>
-
-</div>
+  @if (loaded) {
+    <div class="section" id="comm" [@load3]="checked? 'default': 'hidden'">
+      <div id="chad">
+        <app-chat></app-chat>
+      </div>
+      <app-users-list></app-users-list>
+    </div>
+  }

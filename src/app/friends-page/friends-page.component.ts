@@ -2,19 +2,22 @@ import {Component, OnInit} from '@angular/core';
 import {User} from '../classes/user';
 import {HttpClient, HttpParams, HttpHeaderResponse, HttpHeaders} from '@angular/common/http';
 import {Stomp} from '@stomp/stompjs';
-import * as SockJS from 'sockjs-client';
+import SockJS from 'sockjs-client';
 import {SingleMessageComponent} from '../single-message/single-message.component';
 import {SingleMessageService} from '../services/single-message.service';
-import {ConfirmationService, DialogService, DynamicDialogRef, MessageService} from 'primeng/api';
+import {ConfirmationService} from 'primeng/api';
+import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-friends-page',
+  standalone: false,
   templateUrl: './friends-page.component.html',
   styleUrls: ['./friends-page.component.less'],
   providers: [DialogService, ConfirmationService]
 })
 export class FriendsPageComponent implements OnInit {
 
+  selectedTab: 'friends' | 'incoming' | 'outgoing' = 'friends';
   friends: User[];
   inRequested: User[];
   outRequested: User[];
