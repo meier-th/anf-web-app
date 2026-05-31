@@ -12,6 +12,24 @@ body {
   font-family: kek;
 }
 
+/* Ensure password masking glyphs remain visible with the custom global font. */
+input[type='password'] {
+  font-family: Arial, "Helvetica Neue", sans-serif !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  text-shadow: none !important;
+  caret-color: #1f2937 !important;
+}
+
+.p-password input,
+input.p-password-input {
+  font-family: Arial, "Helvetica Neue", sans-serif !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  text-shadow: none !important;
+  caret-color: #1f2937 !important;
+}
+
 html, body {
   height: 100%;
 }

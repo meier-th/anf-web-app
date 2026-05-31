@@ -1,42 +1,47 @@
 @if (!registration) {
-  <div class="auth-mode">
-    <button type="button" (click)="authMode = 'signin'">{{'Sign in' | translate}}</button>
-    <button type="button" (click)="authMode = 'signup'">{{'Sign up' | translate}}</button>
-  </div>
-}
-@if (!registration && authMode === 'signin') {
-  <div id="sign-in">
-    <div>
-      <label for="sign-in-login">{{'Login:' | translate}}</label><br>
-      <input id="sign-in-login" type="text" pInputText [(ngModel)]="username"/>
-    </div>
-    <div>
-      <label for="sign-in-password">{{'Password:' | translate}} </label><br>
-      <input id="sign-in-password" type="password" pPassword [feedback]="false"
-        [(ngModel)]="firstPassword" (keyup.enter)="tryToLogin()"/>
-    </div>
-    <p-button label="{{'Sign in' | translate}}" (onClick)="tryToLogin()"></p-button>
-    <!--<p-button label="{{'VK' | translate}}" (onClick)="tryToSignInWithVk()"></p-button>
-    <p-button label="G+" (onClick)="tryToSignInWithGoogle()"></p-button>-->
-  </div>
-}
+  <div class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-mode">
+        <button type="button" [class.active]="authMode === 'signin'" (click)="authMode = 'signin'">{{'Sign in' | translate}}</button>
+        <button type="button" [class.active]="authMode === 'signup'" (click)="authMode = 'signup'">{{'Sign up' | translate}}</button>
+      </div>
 
-@if (!registration && authMode === 'signup') {
-  <div id="sign-up">
-    <div>
-      <label for="sign-up-login">{{'Login:' | translate}} </label><br>
-      <input id="sign-up-login" type="text" pInputText [(ngModel)]="username"/>
+      @if (authMode === 'signin') {
+        <div id="sign-in">
+          <div>
+            <label for="sign-in-login">{{'Login:' | translate}}</label><br>
+            <input id="sign-in-login" type="text" pInputText [(ngModel)]="username"/>
+          </div>
+          <div>
+            <label for="sign-in-password">{{'Password:' | translate}} </label><br>
+            <input id="sign-in-password" type="password" pInputText
+              [(ngModel)]="firstPassword" (keyup.enter)="tryToLogin()"/>
+          </div>
+          <p-button label="{{'Sign in' | translate}}" (onClick)="tryToLogin()"></p-button>
+          <!--<p-button label="{{'VK' | translate}}" (onClick)="tryToSignInWithVk()"></p-button>
+          <p-button label="G+" (onClick)="tryToSignInWithGoogle()"></p-button>-->
+        </div>
+      }
+
+      @if (authMode === 'signup') {
+        <div id="sign-up">
+          <div>
+            <label for="sign-up-login">{{'Login:' | translate}} </label><br>
+            <input id="sign-up-login" type="text" pInputText [(ngModel)]="username"/>
+          </div>
+          <div>
+            <label for="sign-up-password">{{'Password:' | translate}} </label><br>
+            <input id="sign-up-password" type="password" pInputText [(ngModel)]="firstPassword"/>
+          </div>
+          <div>
+            <label for="sign-up-confirm">{{'Confirm password:' | translate}} </label><br>
+            <input id="sign-up-confirm" type="password" pInputText
+              [(ngModel)]="secondPassword" (keyup.enter)="tryToSignUp()"/>
+          </div>
+          <p-button label="{{'Sign up' | translate}}" (onClick)="tryToSignUp()"></p-button>
+        </div>
+      }
     </div>
-    <div>
-      <label for="sign-up-password">{{'Password:' | translate}} </label><br>
-      <input id="sign-up-password" type="password" pPassword [(ngModel)]="firstPassword"/>
-    </div>
-    <div>
-      <label for="sign-up-confirm">{{'Confirm password:' | translate}} </label><br>
-      <input id="sign-up-confirm" type="password" pPassword
-        [(ngModel)]="secondPassword" (keyup.enter)="tryToSignUp()"/>
-    </div>
-    <p-button label="{{'Sign up' | translate}}" (onClick)="tryToSignUp()"></p-button>
   </div>
 }
 

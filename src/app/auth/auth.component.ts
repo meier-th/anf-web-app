@@ -1,6 +1,7 @@
 import {Component, Injector, OnInit} from '@angular/core';
 import {HttpClient, HttpErrorResponse, HttpParams} from '@angular/common/http';
 import {CookieService} from 'ngx-cookie-service';
+import {switchMap} from 'rxjs/operators';
 import {MainComponent} from '../main/main.component';
 import {Appearance} from '../classes/appearance';
 import {TranslatePipe} from '../services/translate.pipe';
@@ -68,40 +69,32 @@ export class AuthComponent implements OnInit {
     } else if (this.firstPassword !== this.secondPassword) {
       this.parent.messageService.add({severity: 'error', summary: this.pipe.transform('Error'), detail: this.pipe.transform('Passwords are not the same')});
     } else {
-      console.log('request sent');
-      this.httpClient.post(this.apiConfig.buildUrl('/registration'), {
+      this.authApi.register({
         login: this.username,
         password: this.firstPassword
-      }).subscribe((response) => {
-          console.log(response);
+      }).pipe(
+        switchMap(() => this.authApi.login(this.username, this.firstPassword))
+      ).subscribe({
+        next: () => {
           this.registration = true;
-          this.authApi.login(this.username, this.firstPassword).subscribe((response) => {
-            console.log(response);
-            // this.parent.loginSuccess();
-            this.cookieService.set('username', this.username);
-            this.cookieService.set('loggedIn', 'true');
-            this.parent.loggedIn = true;
-            this.parent.login = this.cookieService.get('username');
-          }, (error) => {
-            this.parent.messageService.add({
-              severity: 'error',
-              summary: this.pipe.transform('Error'),
-              detail: this.pipe.transform('Unauthorized')
-            });
-          });
+          this.cookieService.set('username', this.username);
+          this.cookieService.set('loggedIn', 'true');
+          this.parent.loggedIn = true;
+          this.parent.login = this.cookieService.get('username');
           this.parent.messageService.add({
             severity: 'success',
             summary: this.pipe.transform('Almost done'),
             detail: this.pipe.transform('Now create your character')
           });
         },
-        (error: HttpErrorResponse) => {
+        error: (error: HttpErrorResponse) => {
           this.parent.messageService.add({
             severity: 'error',
             summary: this.pipe.transform('Error'),
             detail: error.message
           });
-        });
+        }
+      });
     }
   }
 

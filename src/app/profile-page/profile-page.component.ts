@@ -13,6 +13,7 @@ import {Stomp} from '@stomp/stompjs';
 import {AnimalRaceChoiceComponent} from '../animal-race-choice/animal-race-choice.component';
 import SockJS from 'sockjs-client';
 import {animate, state, style, transition, trigger} from '@angular/animations';
+import {ApiConfigService} from '../core/config/api-config.service';
 
 @Component({
   selector: 'app-profile-page',
@@ -75,13 +76,14 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
 
   constructor(private http: HttpClient, private injector: Injector,
               private dialogService: DialogService, private areaService: AreaService,
-              private cookieService: CookieService, private confService: ConfirmationService) {
+              private cookieService: CookieService, private confService: ConfirmationService,
+              private apiConfig: ApiConfigService) {
 
   }
 
   ngOnInit() {
     //document.documentElement.style.overflowY = 'hidden';
-    this.http.get<User>('http://localhost:8080/profile', {withCredentials: true}).subscribe(data => {
+    this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true}).subscribe(data => {
       this.loaded = true;
       this.user = data;
       this.user.character.resistance = parseFloat(this.user.character.resistance.toFixed(2));
@@ -94,7 +96,7 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   subscribeForWebsockets() {
-    const ws = new SockJS('http://localhost:8080/socket');
+    const ws = new SockJS(this.apiConfig.buildUrl('/socket'));
     this.stompClient = Stomp.over(ws);
     const that = this;
     this.stompClient.connect({}, function (frame) {
@@ -117,10 +119,10 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
       setTimeout(() => {
         this.ready = false;
       }, 300000);
-      request = this.http.get('http://localhost:8080/profile/online', {withCredentials: true});
+      request = this.http.get(this.apiConfig.buildUrl('/profile/online'), {withCredentials: true});
     } else {
       this.ready = false;
-      request = this.http.get('http://localhost:8080/profile/offline', {withCredentials: true});
+      request = this.http.get(this.apiConfig.buildUrl('/profile/offline'), {withCredentials: true});
     }
     request.subscribe(() => {
       this.cookieService.set('ready', this.ready.toString(), new Date(Date.now() + 300000));
@@ -205,7 +207,7 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   upgrade(param: string): void {
-    this.http.post('http://localhost:8080/profile/character',
+    this.http.post(this.apiConfig.buildUrl('/profile/character'),
       new HttpParams().set('quality', param),
       {
         headers:

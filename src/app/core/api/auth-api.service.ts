@@ -8,6 +8,11 @@ export interface SessionCheckResponse {
   login: string;
 }
 
+export interface RegisterRequest {
+  login: string;
+  password: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,6 +30,13 @@ export class AuthApiService {
       withCredentials: true,
       observe: 'response',
       params: new HttpParams().append('username', username).append('password', password)
+    });
+  }
+
+  register(payload: RegisterRequest): Observable<unknown> {
+    return this.http.post(this.apiConfig.buildUrl('/registration'), payload, {
+      withCredentials: true,
+      observe: 'response'
     });
   }
 
