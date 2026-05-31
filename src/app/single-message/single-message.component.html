@@ -3,5 +3,5 @@
   <label for="text">{{'Message' | translate}}:</label><br>
   <input id="text" type="text" pInputText [(ngModel)]="input"/>
 </div>
-<p-button label="{{'Send' | translate}}" (onClick)="confirm()"></p-button>
+<p-button id="send" label="{{'Send' | translate}}" (onClick)="confirm()"></p-button>
   <p-button label="{{'Cancel' | translate}}" (onClick)="cancel()"></p-button>

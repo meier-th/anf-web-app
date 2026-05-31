@@ -2,37 +2,45 @@
   <div class="ui-sidebar-sm">
     <button type="button" (click)="display = false">x</button>
   <div class="menu">
-    <div class="pages" (click)="changeLanguage()">
-      <p>
-        {{'switch' | translate}}
-      </p>
+    <div class="pages language-tab" [class.open]="languageMenuOpen">
+      <button type="button" class="lang-trigger" (click)="toggleLanguageMenu($event)">
+        <span class="flag-icon">{{currentLanguage === 'ru' ? '🇷🇺' : '🇬🇧'}}</span>
+        <span>{{'Language' | translate}}</span>
+      </button>
+      @if (languageMenuOpen) {
+        <div class="lang-menu">
+          <button type="button" class="lang-option" (click)="setLanguage('en')">
+            <span class="flag-icon">🇬🇧</span>
+            <span>{{'English' | translate}}</span>
+          </button>
+          <button type="button" class="lang-option" (click)="setLanguage('ru')">
+            <span class="flag-icon">🇷🇺</span>
+            <span>{{'Russian' | translate}}</span>
+          </button>
+        </div>
+      }
     </div>
-    @if (router.url !== '/start') {
-      <div class="pages" (click)="router.navigateByUrl('start')">
-        <p>{{'Main' | translate }}</p>
-      </div>
-    }
     @if (router.url === '/start') {
       <div class="pages" (click)="router.navigateByUrl('info')">
         <p>{{'About project' | translate }}</p>
       </div>
     }
-    @if (router.url === '/profile') {
+    @if (router.url === '/main') {
       <div class="pages" (click)="router.navigateByUrl('messages')">
         <p>{{'Messages' | translate }}</p>
       </div>
     }
-    @if (loggedIn && router.url !== '/profile') {
-      <div class="pages" (click)="router.navigateByUrl('profile')">
-        <p>{{'Profile' | translate }}</p>
+    @if (loggedIn && router.url !== '/main') {
+      <div class="pages" (click)="router.navigateByUrl('main')">
+        <p>{{'Game' | translate }}</p>
       </div>
     }
-    @if (loggedIn && router.url === '/profile') {
+    @if (loggedIn && router.url === '/main') {
       <div class="pages" (click)="router.navigateByUrl('history')">
         <p>{{'History' | translate }}</p>
       </div>
     }
-    @if (loggedIn && router.url === '/profile') {
+    @if (loggedIn && router.url === '/main') {
       <div class="pages" (click)="router.navigateByUrl('spells')">
         <p>{{'Spells' | translate }}</p>
       </div>
@@ -68,37 +76,45 @@
 <img id = "showMenuButton" src="../../assets/menuButton.png" (click)="display = true"/>
 
 <div class="menu">
-  <div class="pages" (click)="changeLanguage()">
-    <p>
-      {{'switch' | translate}}
-    </p>
+  <div class="pages language-tab" [class.open]="languageMenuOpen">
+    <button type="button" class="lang-trigger" (click)="toggleLanguageMenu($event)">
+      <span class="flag-icon">{{currentLanguage === 'ru' ? '🇷🇺' : '🇬🇧'}}</span>
+      <span>{{'Language' | translate}}</span>
+    </button>
+    @if (languageMenuOpen) {
+      <div class="lang-menu">
+        <button type="button" class="lang-option" (click)="setLanguage('en')">
+          <span class="flag-icon">🇬🇧</span>
+          <span>{{'English' | translate}}</span>
+        </button>
+        <button type="button" class="lang-option" (click)="setLanguage('ru')">
+          <span class="flag-icon">🇷🇺</span>
+          <span>{{'Russian' | translate}}</span>
+        </button>
+      </div>
+    }
   </div>
-  @if (router.url !== '/start') {
-    <div class="pages" (click)="router.navigateByUrl('start')">
-      <p>{{'Main' | translate }}</p>
-    </div>
-  }
   @if (router.url === '/start') {
     <div class="pages" (click)="router.navigateByUrl('info')">
       <p>{{'About project' | translate }}</p>
     </div>
   }
-  @if (router.url === '/profile') {
+  @if (router.url === '/main') {
     <div class="pages" (click)="router.navigateByUrl('messages')">
       <p>{{'Messages' | translate }}</p>
     </div>
   }
-  @if (loggedIn && router.url !== '/profile') {
-    <div class="pages" (click)="router.navigateByUrl('profile')">
-      <p>{{'Profile' | translate }}</p>
+  @if (loggedIn && router.url !== '/main') {
+    <div class="pages" (click)="router.navigateByUrl('main')">
+      <p>{{'Game' | translate }}</p>
     </div>
   }
-  @if (loggedIn && router.url === '/profile') {
+  @if (loggedIn && router.url === '/main') {
     <div class="pages" (click)="router.navigateByUrl('history')">
       <p>{{'History' | translate }}</p>
     </div>
   }
-  @if (loggedIn && router.url === '/profile') {
+  @if (loggedIn && router.url === '/main') {
     <div class="pages" (click)="router.navigateByUrl('spells')">
       <p>{{'Spells' | translate }}</p>
     </div>

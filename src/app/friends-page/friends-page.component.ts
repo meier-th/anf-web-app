@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {User} from '../classes/user';
 import {HttpClient, HttpParams, HttpHeaderResponse, HttpHeaders} from '@angular/common/http';
 import {Stomp} from '@stomp/stompjs';
@@ -7,6 +7,7 @@ import {SingleMessageComponent} from '../single-message/single-message.component
 import {SingleMessageService} from '../services/single-message.service';
 import {ConfirmationService} from 'primeng/api';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {ApiConfigService} from '../core/config/api-config.service';
 
 @Component({
   selector: 'app-friends-page',
@@ -15,29 +16,26 @@ import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
   styleUrls: ['./friends-page.component.less'],
   providers: [DialogService, ConfirmationService]
 })
-export class FriendsPageComponent implements OnInit {
+export class FriendsPageComponent implements OnInit, OnDestroy {
 
-  selectedTab: 'friends' | 'incoming' | 'outgoing' = 'friends';
-  friends: User[];
-  inRequested: User[];
-  outRequested: User[];
-  private stompClient;
+  selectedTab: 'friends' | 'incoming' | 'pending' = 'friends';
+  friends: User[] = [];
+  inRequested: User[] = [];
+  outRequested: User[] = [];
+  private stompClient: any;
   private dialog: DynamicDialogRef;
 
   constructor(private http: HttpClient, private dialogService: DialogService,
-              private confirmationService: ConfirmationService, private msgServ: SingleMessageService) {
+              private confirmationService: ConfirmationService, private msgServ: SingleMessageService,
+              private apiConfig: ApiConfigService) {
   }
 
   ngOnInit() {
-    this.friends = [];
-    this.inRequested = [];
-    this.outRequested = [];
-    
-    this.http.get<User[]>('http://localhost:8080/friends/requests/incoming', {withCredentials: true})
+    this.http.get<User[]>(this.apiConfig.buildUrl('/friends/requests/incoming'), {withCredentials: true})
       .subscribe(data => this.inRequested = data);
-    this.http.get<User[]>('http://localhost:8080/friends/requests/outgoing', {withCredentials: true})
+    this.http.get<User[]>(this.apiConfig.buildUrl('/friends/requests/outgoing'), {withCredentials: true})
       .subscribe(data => this.outRequested = data);
-    this.http.get<User[]>('http://localhost:8080/friends', {withCredentials: true})
+    this.http.get<User[]>(this.apiConfig.buildUrl('/friends'), {withCredentials: true})
       .subscribe(data => {
         this.friends = data;
         this.checkOnline();
@@ -46,8 +44,28 @@ export class FriendsPageComponent implements OnInit {
     this.initializeWebSockets();
   }
 
+  ngOnDestroy(): void {
+    if (this.stompClient && this.stompClient.connected) {
+      this.stompClient.disconnect(() => {});
+    }
+  }
+
+  setTab(tab: 'friends' | 'incoming' | 'pending'): void {
+    this.selectedTab = tab;
+  }
+
+  getTabCount(tab: 'friends' | 'incoming' | 'pending'): number {
+    if (tab === 'friends') {
+      return this.friends.length;
+    }
+    if (tab === 'incoming') {
+      return this.inRequested.length;
+    }
+    return this.outRequested.length;
+  }
+
   initializeWebSockets() {
-    const ws = new SockJS('http://localhost:8080/socket');
+    const ws = new SockJS(this.apiConfig.buildUrl('/socket'));
     this.stompClient = Stomp.over(ws);
     const that = this;
     this.stompClient.connect({}, function (frame) {
@@ -86,14 +104,14 @@ export class FriendsPageComponent implements OnInit {
             const username = str.substring(i + 2, str.length);
             let user: User;
             // console.log("username: "+username);
-            const url = 'http://localhost:8080/users/' + username;
+            const url = that.apiConfig.buildUrl('/users/' + username);
             that.http.get<User>(url, {withCredentials: true})
               .subscribe(data => {
                 user = data;
                 user.online = false;
                 user.offline = true;
                 let ready = [];
-                that.http.get<string[]>('http://localhost:8080/ready', {withCredentials: true})
+                that.http.get<string[]>(that.apiConfig.buildUrl('/ready'), {withCredentials: true})
                   .subscribe(data => {
                     ready = data;
                     if (ready.includes(user.login)) {
@@ -101,27 +119,16 @@ export class FriendsPageComponent implements OnInit {
                       user.offline = false;
                     }
                   });
-                if (!that.friends.map(us => us.login).includes(user.login)) {
-                  that.friends.push(user);
-                }
+                that.addUniqueByLogin(that.friends, user);
               });
             if (type === '+') {
-              const ind = that.outRequested.indexOf(user);
-              that.outRequested.splice(ind, 1);
+              that.removeByLogin(that.outRequested, username);
             } else {
-              const ind = that.inRequested.indexOf(user);
-              that.inRequested.splice(ind, 1);
+              that.removeByLogin(that.inRequested, username);
             }
           } else if (type === '-') {
             const username = str.substring(i + 2, str.length);
-            let user: User;
-            // console.log("username: "+username);
-            const url = 'http://localhost:8080/users/' + username;
-            that.http.get<User>(url, {withCredentials: true})
-              .subscribe(data => {
-                user = data;
-              });
-            that.friends.splice(that.friends.indexOf(user), 1);
+            that.removeByLogin(that.friends, username);
           }
         } else if (event === 'request') {
           const type = str.substring(i + 1, i + 2);
@@ -130,42 +137,34 @@ export class FriendsPageComponent implements OnInit {
             const username = str.substring(i + 2, str.length);
             let user: User;
             // console.log("username: "+username);
-            const url = 'http://localhost:8080/users/' + username;
+            const url = that.apiConfig.buildUrl('/users/' + username);
             that.http.get<User>(url, {withCredentials: true})
               .subscribe(data => {
                 user = data;
                 if (type === '+') {
-                  that.inRequested.push(user);
+                  that.addUniqueByLogin(that.inRequested, user);
                 } else {
-                  that.outRequested.push(user);
+                  that.addUniqueByLogin(that.outRequested, user);
                 }
               });
           } else {
             const username = str.substring(i + 2, str.length);
             let user: User;
             // console.log("username: "+username);
-            const url = 'http://localhost:8080/users/' + username;
+            const url = that.apiConfig.buildUrl('/users/' + username);
             that.http.get<User>(url, {withCredentials: true})
               .subscribe(data => {
                 user = data;
                 if (type === '-') {
-                  that.inRequested.splice(that.inRequested.indexOf(user), 1);
+                  that.removeByLogin(that.inRequested, user.login);
                 } else {
-                  that.outRequested.splice(that.outRequested.indexOf(user), 1);
+                  that.removeByLogin(that.outRequested, user.login);
                 }
               });
           }
         } else {
           const username = str.substring(i + 1, str.length);
-          let user: User;
-          // console.log("username: "+username);
-          const url = 'http://localhost:8080/users/' + username;
-          that.http.get<User>(url, {withCredentials: true})
-            .subscribe(data => {
-              user = data;
-              that.outRequested.splice(that.outRequested.indexOf(user), 1);
-            });
-
+          that.removeByLogin(that.outRequested, username);
         }
       });
     });
@@ -174,7 +173,7 @@ export class FriendsPageComponent implements OnInit {
   addFriend(req: User): void {
     req.offline = true;
     req.online = false;
-    this.http.post('http://localhost:8080/profile/friends',
+    this.http.post(this.apiConfig.buildUrl('/profile/friends'),
       new HttpParams().set('login', req.login),
       {
         headers:
@@ -185,7 +184,7 @@ export class FriendsPageComponent implements OnInit {
         withCredentials: true
       }).subscribe(msg => {
     });
-    this.http.get<string[]>('http://localhost:8080/ready', {withCredentials: true})
+    this.http.get<string[]>(this.apiConfig.buildUrl('/ready'), {withCredentials: true})
       .subscribe(data => {
         const ready: string[] = data;
         if (ready.includes(req.login)) {
@@ -193,20 +192,19 @@ export class FriendsPageComponent implements OnInit {
           req.online = true;
         }
       });
-    this.friends.push(req);
-    this.inRequested.splice(this.inRequested.indexOf(req), 1);
+    this.addUniqueByLogin(this.friends, req);
+    this.removeByLogin(this.inRequested, req.login);
   }
 
   deleteRequest(req: User): void {
     const username = req.login;
-    this.http.delete<string>('http://localhost:8080/profile/friends/requests', {
+    this.http.delete<string>(this.apiConfig.buildUrl('/profile/friends/requests'), {
       withCredentials: true,
       params: new HttpParams().append('username', username).append('type', 'out')
     }).subscribe(data => {
       console.log(data);
     });
-    const id = this.outRequested.indexOf(req);
-    this.outRequested.splice(id, 1);
+    this.removeByLogin(this.outRequested, req.login);
   }
 
   checkOnline() {
@@ -214,7 +212,7 @@ export class FriendsPageComponent implements OnInit {
       frnd.offline = true;
       frnd.online = false;
     });
-    this.http.get<string[]>('http://localhost:8080/ready', {withCredentials: true})
+    this.http.get<string[]>(this.apiConfig.buildUrl('/ready'), {withCredentials: true})
       .subscribe(result => {
         console.log(result);
         this.friends.forEach(friend => {
@@ -231,26 +229,24 @@ export class FriendsPageComponent implements OnInit {
 
   declineReq(req: User): void {
     const username = req.login;
-    this.http.delete<string>('http://localhost:8080/profile/friends/requests', {
+    this.http.delete<string>(this.apiConfig.buildUrl('/profile/friends/requests'), {
       withCredentials: true,
       params: new HttpParams().append('username', username).append('type', 'in')
     }).subscribe(data => {
       console.log(data);
     });
-    const id = this.inRequested.indexOf(req);
-    this.inRequested.splice(id, 1);
+    this.removeByLogin(this.inRequested, req.login);
   }
 
   deleteFriend(usr: User): void {
     const username = usr.login;
-    this.http.delete<string>('http://localhost:8080/profile/friends', {
+    this.http.delete<string>(this.apiConfig.buildUrl('/profile/friends'), {
       withCredentials: true,
       params: new HttpParams().append('username', username)
     }).subscribe(data => {
       console.log(data);
     });
-    const id = this.friends.indexOf(usr);
-    this.friends.splice(id, 1);
+    this.removeByLogin(this.friends, usr.login);
   }
 
   inviteToPVP(usr: User): void {
@@ -263,6 +259,19 @@ export class FriendsPageComponent implements OnInit {
       width: '800px', height: '400px'
     });
     this.msgServ.closingObj = this.dialog;
+  }
+
+  private removeByLogin(users: User[], login: string): void {
+    const index = users.findIndex(user => user.login === login);
+    if (index > -1) {
+      users.splice(index, 1);
+    }
+  }
+
+  private addUniqueByLogin(users: User[], user: User): void {
+    if (!users.some(existingUser => existingUser.login === user.login)) {
+      users.push(user);
+    }
   }
 
 }

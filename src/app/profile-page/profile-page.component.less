@@ -77,6 +77,10 @@
 
 #nav {
   width: 65%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   @media (max-width: 700px) {
     width: 100%;
   }
@@ -86,9 +90,11 @@
 }
 
 #map {
-  margin-top: 2.5%;
+  margin-top: 0;
   width: 100%;
-  height: auto;
+  height: 100%;
+  max-height: 100%;
+  display: block;
 }
 
 #social {
@@ -102,9 +108,11 @@
 
 .ground {
   fill: #a7cc95;
-  &:hover {
-    fill: red;
-  }
+  transition: fill 0.12s ease-in-out;
+}
+
+.ground.hovered-ground {
+  fill: #9f5454;
 }
 
 #comm, #userdata {
@@ -122,6 +130,205 @@
 
 #chad {
   height: 20%;
+}
+
+.section#userdata {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.93) 0%, rgba(23, 33, 56, 0.9) 100%);
+  border-right: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+#userdata #profile_info {
+  display: grid;
+  gap: 8px;
+}
+
+#userdata #img_and_immutable {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  align-items: stretch;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.08);
+  min-height: 140px;
+  max-height: 140px;
+  overflow: hidden;
+}
+
+#userdata #avatar {
+  float: none;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#userdata #user_parameters {
+  float: none;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  height: 100%;
+  grid-template-rows: auto 1fr;
+}
+
+#userdata .profile-login {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 16px;
+}
+
+#userdata .dashboard-stack {
+  display: grid;
+  gap: 8px;
+}
+
+#userdata .dashboard-card {
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+#userdata .card-title {
+  margin: 0 0 8px 0;
+  color: #f8fafc;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+#userdata .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+#userdata .stats-grid.compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#userdata .stat-item {
+  display: grid;
+  gap: 0;
+}
+
+#userdata .stat-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+#userdata .stat-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+#userdata .tile-label {
+  display: block;
+  color: #e2e8f0;
+  font-size: 11px;
+  line-height: 1;
+  margin: 0;
+}
+
+#userdata .tile-value {
+  color: #f8fafc;
+  font-size: 19px;
+  line-height: 1;
+}
+
+#userdata .upgrade-points {
+  margin-top: 8px;
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+#userdata .animal-race-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+#userdata .stats {
+  color: #e2e8f0;
+  font-size: 12px;
+  margin: 0;
+}
+
+#userdata .stat-tile button {
+  border-radius: 6px;
+  border: 1px solid #60a5fa;
+  background: #1e3a8a;
+  color: #f8fafc;
+  width: 24px;
+  height: 24px;
+}
+
+#userdata .stat-tile button:hover {
+  background: #1d4ed8;
+}
+
+#userdata .vertical {
+  margin-top: 8px;
+  color: #e2e8f0;
+}
+
+#userdata .ready-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#userdata .ready-button {
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+#userdata .ready-button:hover {
+  background: rgba(30, 41, 59, 0.85);
+}
+
+#userdata .ready-button.active {
+  border-color: #81e890;
+  background: rgba(32, 95, 59, 0.55);
+}
+
+@media (max-width: 1238px) {
+  #userdata #img_and_immutable {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    max-height: none;
+  }
+
+  #userdata #avatar {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  #userdata .stats-grid,
+  #userdata .stats-grid.compact {
+    grid-template-columns: 1fr;
+  }
 }
 
 

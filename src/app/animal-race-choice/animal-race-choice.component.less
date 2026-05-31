@@ -1,19 +1,67 @@
+.race-shell {
+    min-height: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    background: radial-gradient(circle at top right, #2a3f6f 0%, #16213f 45%, #0f172a 100%);
+    color: #f8fafc;
+}
+
 .full {
     display: flex;
+    gap: 12px;
 }
 h1 {
-    font-size: 17pt;
-    margin-top: 3px;
-    margin-bottom: 3px;
+    font-size: 20px;
+    margin: 0 0 10px 0;
+    color: #f8fafc;
 }
 #rel, .left {
     flex: 50%;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: transparent;
+    border: none;
+    padding: 0;
 }
 div {
-    font-family: 'Times New Roman', Times, serif;
-    font-weight: normal;
+    font-family: inherit;
+    font-weight: 500;
     font-size: 11pt;
+    color: #0f172a;
 }
 label{
-    font-size: 15pt;
+    font-size: 18px;
+    color: #0f172a;
+}
+
+.race-item {
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.race-description {
+    margin-top: 6px;
+    line-height: 1.35;
+    font-family: Arial, "Helvetica Neue", sans-serif;
+    font-weight: 500;
+}
+
+::host ::ng-deep .race-description .p-button {
+    margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+    .full {
+        flex-direction: column;
+    }
 }

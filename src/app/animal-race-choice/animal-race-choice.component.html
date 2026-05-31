@@ -1,14 +1,27 @@
-<h1>{{'AnimalRaceHeader' | translate }}</h1>
-<div class="full">
-<div class="left">
-  <label class="name">Veseliba</label>
-<div id = "fat">{{'fat' | translate}} <br> <p-button label="{{'Choose' | translate }}" (onClick)="choose('fat')"></p-button></div>
-<label class="name">Bojajumus</label>
-<div id = "dmg">{{'dmg' | translate}} <br> <p-button label="{{'Choose' | translate }}" (onClick)="choose('dmg')"></p-button></div>
-<label class="name">Lidzsvaru</label>
-<div id = "blc">{{'blc' | translate}} <br> <p-button label="{{'Choose' | translate }}" (onClick)="choose('blc')"></p-button></div>
-</div>
-<div id = "rel">
-    <label class="name">Bugurt</label> <br>
-  {{'rel' | translate}} <br> <p-button label="{{'Choose' | translate }}" (onClick)="choose('rel')"></p-button></div>
+<div class="race-shell">
+  <h1>{{'AnimalRaceHeader' | translate }}</h1>
+  <div class="full">
+    <div class="left">
+      <div class="race-item">
+        <label class="name">Veseliba</label>
+        <div id="fat" class="race-description">{{'fat' | translate}} <br> <p-button label="{{'Choose' | translate }}" (onClick)="choose('fat')"></p-button></div>
+      </div>
+
+      <div class="race-item">
+        <label class="name">Bojajumus</label>
+        <div id="dmg" class="race-description">{{'dmg' | translate}} <br> <p-button label="{{'Choose' | translate }}" (onClick)="choose('dmg')"></p-button></div>
+      </div>
+
+      <div class="race-item">
+        <label class="name">Lidzsvaru</label>
+        <div id="blc" class="race-description">{{'blc' | translate}} <br> <p-button label="{{'Choose' | translate }}" (onClick)="choose('blc')"></p-button></div>
+      </div>
+    </div>
+    <div id="rel" class="race-item">
+      <label class="name">Bugurt</label> <br>
+      <div class="race-description">
+        {{'rel' | translate}} <br> <p-button label="{{'Choose' | translate }}" (onClick)="choose('rel')"></p-button>
+      </div>
+    </div>
+  </div>
 </div>

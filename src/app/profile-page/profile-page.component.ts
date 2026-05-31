@@ -14,6 +14,9 @@ import {AnimalRaceChoiceComponent} from '../animal-race-choice/animal-race-choic
 import SockJS from 'sockjs-client';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 import {ApiConfigService} from '../core/config/api-config.service';
+import {Stats} from '../classes/stats';
+import {Character} from '../classes/character';
+import {Appearance} from '../classes/appearance';
 
 @Component({
   selector: 'app-profile-page',
@@ -73,6 +76,8 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   public checked = false;
   dialog: DynamicDialogRef;
   private stompClient;
+  private statsMissingFromProfile = false;
+  private hoveredGround: HTMLElement | null = null;
 
   constructor(private http: HttpClient, private injector: Injector,
               private dialogService: DialogService, private areaService: AreaService,
@@ -84,9 +89,13 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   ngOnInit() {
     //document.documentElement.style.overflowY = 'hidden';
     this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true}).subscribe(data => {
+      this.statsMissingFromProfile = !data.stats;
+      this.user = this.normalizeUser(data);
+      if (typeof this.user.character.resistance === 'number') {
+        this.user.character.resistance = parseFloat(this.user.character.resistance.toFixed(2));
+      }
       this.loaded = true;
-      this.user = data;
-      this.user.character.resistance = parseFloat(this.user.character.resistance.toFixed(2));
+      this.loadStatsIfMissing();
     }, () => {
       this.parent.loggedIn = false;
       this.parent.router.navigateByUrl('start');
@@ -127,6 +136,14 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
     request.subscribe(() => {
       this.cookieService.set('ready', this.ready.toString(), new Date(Date.now() + 300000));
     });
+  }
+
+  public setReadyState(isReady: boolean): void {
+    if (this.ready === isReady) {
+      return;
+    }
+    this.ready = isReady;
+    this.changeReadyState();
   }
 
   changeHair() {
@@ -230,6 +247,80 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
     this.user.stats.upgradePoints--;
   }
 
+  private normalizeUser(user: User): User {
+    const defaultCharacter = this.createDefaultCharacter();
+    const normalizedCharacter = {
+      ...defaultCharacter,
+      ...(user.character ?? {}),
+      appearance: {
+        ...defaultCharacter.appearance,
+        ...(user.character?.appearance ?? {})
+      }
+    };
+
+    return {
+      ...user,
+      character: normalizedCharacter,
+      stats: user.stats ?? this.createDefaultStats()
+    };
+  }
+
+  private createDefaultCharacter(): Character {
+    return {
+      animalRace: undefined,
+      cretionDate: undefined,
+      appearance: this.createDefaultAppearance(),
+      maxChakra: 30,
+      maxHp: 100,
+      user: undefined,
+      physicalDamage: 10,
+      resistance: 0.05,
+      spellsKnown: [],
+      fights: [],
+      currentHP: 100,
+      currentChakra: 30
+    };
+  }
+
+  private createDefaultAppearance(): Appearance {
+    return {
+      gender: 'MALE',
+      skinColour: 'WHITE',
+      hairColour: 'YELLOW',
+      clothesColour: 'GREEN'
+    };
+  }
+
+  private createDefaultStats(): Stats {
+    return {
+      fights: 0,
+      wins: 0,
+      losses: 0,
+      deaths: 0,
+      rating: 0,
+      experience: 0,
+      level: 1,
+      upgradePoints: 0
+    };
+  }
+
+  private loadStatsIfMissing() {
+    if (!this.user || !this.statsMissingFromProfile) {
+      return;
+    }
+    this.http.get<Stats>(this.apiConfig.buildUrl(`/users/${this.user.login}/stats`), {withCredentials: true}).subscribe({
+      next: (stats) => {
+        this.user.stats = {
+          ...this.createDefaultStats(),
+          ...stats
+        };
+      },
+      error: () => {
+        this.user.stats = this.createDefaultStats();
+      }
+    });
+  }
+
   chooseAnimalRace(): void {
     this.dialog = this.dialogService.open(AnimalRaceChoiceComponent, {width: '800px', height: '600px'});
   }
@@ -253,6 +344,16 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
           areaService.pvp = (<HTMLElement>array[i]).classList.contains('ground');
         };
       }
+
+      const map = document.getElementById('map');
+      if (map) {
+        map.addEventListener('mousemove', (event: MouseEvent) => {
+          const stack = document.elementsFromPoint(event.clientX, event.clientY);
+          const ground = stack.find((element) => element.classList?.contains('ground')) as HTMLElement | undefined;
+          this.setHoveredGround(ground ?? null);
+        });
+        map.addEventListener('mouseleave', () => this.setHoveredGround(null));
+      }
     }
   }
 
@@ -261,7 +362,21 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   ngOnDestroy() {
+    this.setHoveredGround(null);
     document.documentElement.style.overflowY = 'scroll';
+  }
+
+  private setHoveredGround(ground: HTMLElement | null) {
+    if (this.hoveredGround === ground) {
+      return;
+    }
+    if (this.hoveredGround) {
+      this.hoveredGround.classList.remove('hovered-ground');
+    }
+    this.hoveredGround = ground;
+    if (this.hoveredGround) {
+      this.hoveredGround.classList.add('hovered-ground');
+    }
   }
 
 }

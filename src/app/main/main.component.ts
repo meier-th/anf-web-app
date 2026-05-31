@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, HostListener, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
@@ -35,6 +35,8 @@ export class MainComponent implements OnInit {
   private stompClient: CompatClient;
   russian = false;
   display = false;
+  languageMenuOpen = false;
+  currentLanguage: 'en' | 'ru' = 'en';
 
   ngOnInit() {
     this.loggedIn = this.cookieService.get('loggedIn') === 'true';
@@ -47,6 +49,9 @@ export class MainComponent implements OnInit {
         this.sessionStore.setSession(true, response.login);
         this.cookieService.set('username', response.login);
         this.cookieService.set('loggedIn', 'true');
+        if (this.router.url === '/start' || this.router.url === '/') {
+          this.router.navigateByUrl('main');
+        }
       }, (response: { authorized: boolean, login: string }) => {
         this.loggedIn = false;
         this.sessionStore.clearSession();
@@ -56,16 +61,24 @@ export class MainComponent implements OnInit {
       });
     }
     this.initializeWebsockets();
+    this.setLanguage(this.russian ? 'ru' : 'en');
   }
 
-  changeLanguage(): void {
-    if (this.russian) {
-      this.russian = false;
-      this.translate.use('en');
-    } else {
-      this.russian = true;
-      this.translate.use('ru');
-    }
+  toggleLanguageMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.languageMenuOpen = !this.languageMenuOpen;
+  }
+
+  setLanguage(language: 'en' | 'ru'): void {
+    this.currentLanguage = language;
+    this.russian = language === 'ru';
+    this.translate.use(language);
+    this.languageMenuOpen = false;
+  }
+
+  @HostListener('document:click')
+  closeLanguageMenu(): void {
+    this.languageMenuOpen = false;
   }
 
   showLoginBlock() {
@@ -84,6 +97,7 @@ export class MainComponent implements OnInit {
     this.loggedIn = true;
     this.sessionStore.setSession(true, this.login ?? '');
     this.initializeWebsockets();
+    this.router.navigateByUrl('main');
   }
 
   logout() {

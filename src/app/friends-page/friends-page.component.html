@@ -1,67 +1,131 @@
 <div class="friendsList">
   <div class="tabs">
-    <button type="button" (click)="selectedTab = 'friends'">{{'Friends' | translate}}</button>
-    <button type="button" (click)="selectedTab = 'incoming'">{{'In' | translate}}</button>
-    <button type="button" (click)="selectedTab = 'outgoing'">{{'Out' | translate}}</button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="selectedTab === 'friends'"
+      (click)="setTab('friends')">
+      {{'Friends' | translate}} ({{getTabCount('friends')}})
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="selectedTab === 'incoming'"
+      (click)="setTab('incoming')">
+      {{'Incoming requests' | translate}} ({{getTabCount('incoming')}})
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="selectedTab === 'pending'"
+      (click)="setTab('pending')">
+      {{'Pending requests' | translate}} ({{getTabCount('pending')}})
+    </button>
   </div>
+
   @if (selectedTab === 'friends') {
-      <div class="onePage">
-        @if (friends.length == 0) {
-          <label>{{'No friends yet' | translate}}</label>
-        }
-        <ul class="list">
-          @for (friend of friends; track friend) {
-            <li>
-              <div class="userdata">{{friend.login}}
-                @if (friend.online) {
-                  <label class="online">⚫</label>
-                }
-                @if (friend.offline) {
-                  <label class="offline">⚫</label>
-                  }<br>
-                  <!--<p-button *ngIf="friend.online" class="invite" (click)="inviteToPVP(friend)">{{'Invite to Fight' | translate }}
-                </p-button>
-                <br *ngIf="friend.online">-->
-                <p-button class="invite" (click)="showMessageInput(friend)" label="{{'message' | translate}}"></p-button>
-                <br>
-                  <p-button class="decline" (click)="deleteFriend(friend)" label="{{'delete' | translate}}"></p-button>
-                </div>
-              </li>
+    <div class="onePage">
+      @if (friends.length === 0) {
+        <label>{{'No friends yet' | translate}}</label>
+      } @else {
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th>{{'User' | translate}}</th>
+              <th>{{'Status' | translate}}</th>
+              <th>{{'Actions' | translate}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (friend of friends; track friend.login) {
+              <tr>
+                <td>{{friend.login}}</td>
+                <td>
+                  @if (friend.online) {
+                    <span class="status online">{{'Online' | translate}}</span>
+                  } @else {
+                    <span class="status offline">{{'Offline' | translate}}</span>
+                  }
+                </td>
+                <td class="actions">
+                  <p-button
+                    class="action-btn"
+                    (click)="showMessageInput(friend)"
+                    [label]="'message' | translate"></p-button>
+                  <p-button
+                    class="action-btn"
+                    (click)="deleteFriend(friend)"
+                    [label]="'delete' | translate"></p-button>
+                </td>
+              </tr>
             }
-          </ul>
-        </div>
+          </tbody>
+        </table>
+      }
+    </div>
   }
+
   @if (selectedTab === 'incoming') {
-        <div class="onePage">
-          @if (inRequested.length == 0) {
-            <label>{{'No requests yet' | translate}}</label>
-          }
-          <ul class="list">
-            @for (inReq of inRequested; track inReq) {
-              <li>
-                <span class="login">{{inReq.login}}</span><span class="buttons">
-                <p-button (click)="addFriend(inReq)" class="accept">{{'Accept' | translate }}</p-button>
-                <p-button (click)="declineReq(inReq)" class="decline">{{'Decline' | translate }}</p-button>
-              </span>
-            </li>
-          }
-        </ul>
-      </div>
+    <div class="onePage">
+      @if (inRequested.length === 0) {
+        <label>{{'No requests yet' | translate}}</label>
+      } @else {
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th>{{'User' | translate}}</th>
+              <th>{{'Actions' | translate}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (inReq of inRequested; track inReq.login) {
+              <tr>
+                <td>{{inReq.login}}</td>
+                <td class="actions">
+                  <p-button
+                    class="action-btn"
+                    (click)="addFriend(inReq)"
+                    [label]="'Accept' | translate"></p-button>
+                  <p-button
+                    class="action-btn"
+                    (click)="declineReq(inReq)"
+                    [label]="'Decline' | translate"></p-button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
   }
-  @if (selectedTab === 'outgoing') {
-      <div class="onePage">
-        @if (outRequested.length == 0) {
-          <label>{{'No one is requested' | translate}}</label>
-        }
-        <ul class="list">
-          @for (outReq of outRequested; track outReq) {
-            <li>
-              <span class="login">{{outReq.login}}</span><span class="buttons">
-              <p-button (click)="deleteRequest(outReq)" class="decline">{{'Delete' | translate }}</p-button>
-            </span>
-          </li>
-        }
-      </ul>
+
+  @if (selectedTab === 'pending') {
+    <div class="onePage">
+      @if (outRequested.length === 0) {
+        <label>{{'No one is requested' | translate}}</label>
+      } @else {
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th>{{'User' | translate}}</th>
+              <th>{{'Actions' | translate}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (outReq of outRequested; track outReq.login) {
+              <tr>
+                <td>{{outReq.login}}</td>
+                <td class="actions">
+                  <p-button
+                    class="action-btn"
+                    (click)="deleteRequest(outReq)"
+                    [label]="'Delete request' | translate"></p-button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
     </div>
   }
 </div>

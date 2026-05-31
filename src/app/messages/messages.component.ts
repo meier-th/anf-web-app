@@ -6,6 +6,7 @@ import {MainComponent} from '../main/main.component';
 import {Stomp} from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import {animate, state, style, transition, trigger} from '@angular/animations';
+import {ApiConfigService} from '../core/config/api-config.service';
 
 @Component({
   selector: 'app-messages',
@@ -36,14 +37,14 @@ export class MessagesComponent implements OnInit {
   parent = this.injector.get(MainComponent);
   loaded = false;
 
-  constructor(private http: HttpClient, private injector: Injector) {
+  constructor(private http: HttpClient, private injector: Injector, private apiConfig: ApiConfigService) {
   }
 
   ngOnInit() {
     this.dialogues = [];
     // this.http.get<User>('http://localhost:8080/profile', {withCredentials: true})
     //   .subscribe(data => this.user = data);
-    this.http.get<string[]>('http://localhost:8080/profile/dialogs',
+    this.http.get<string[]>(this.apiConfig.buildUrl('/profile/dialogs'),
       {withCredentials: true}).subscribe(data => {
       this.dialogues = data;
       this.loaded = true;
@@ -52,7 +53,7 @@ export class MessagesComponent implements OnInit {
   }
 
   initializeWebSocketConnection() {
-    const ws = new SockJS('http://localhost:8080/socket');
+    const ws = new SockJS(this.apiConfig.buildUrl('/socket'));
     this.stompClient = Stomp.over(ws);
     const that = this;
     this.stompClient.connect({}, function (frame) {

@@ -1,73 +1,144 @@
 <div class="section" id="userdata" [@load1]="checked? 'default': 'hidden'">
   @if (loaded) {
     <div id="profile_info">
-      <div id="img_and_immutable">
-        <p>{{user.login}}</p><br>
+      <div id="img_and_immutable" class="dashboard-card profile-hero">
         <div id="avatar">
           <app-character></app-character>
         </div>
         <div id="user_parameters">
-          <label class="stats">{{'Level:' | translate}} {{user.stats.level}}</label><br>
-          <label class="stats">{{'Rating:' | translate}} {{user.stats.rating}}</label><br>
-          <label class="stats">{{'XP:' | translate }} {{user.stats.experience}}</label><br>
-          @if (user.character.animalRace != undefined) {
-            <label class="stats">{{'Animal Race:' | translate }} <br>
-            {{user.character.animalRace}}</label>
-          }
-          @if (user.character.animalRace == undefined) {
-            <label class="stats">{{'Animal Race:' | translate }} <br>
-              <p-button label="{{'Choose' | translate }}" (onClick)="chooseAnimalRace()"></p-button>
-            </label>
-          }
+          <p class="profile-login">{{user.login}}</p>
+          <div class="stats-grid compact">
+            <div class="stat-item">
+              <span class="tile-label">{{'Level' | translate}}</span>
+              <div class="stat-tile">
+                <span class="tile-value">{{user.stats.level}}</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <span class="tile-label">{{'Rating' | translate}}</span>
+              <div class="stat-tile">
+                <span class="tile-value">{{user.stats.rating}}</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <span class="tile-label">{{'XP' | translate}}</span>
+              <div class="stat-tile">
+                <span class="tile-value">{{user.stats.experience}}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="scroll">
-        @if (loaded) {
-          <div id="stats">
-            <!--<label class="stats">Email:</label>
-            <label class="stats" *ngIf ="user.email != undefined">{{user.email}}</label>
-            <label class="stats" *ngIf="user.email == undefined">
-              <p-button label="{{'Add' | translate}}" (onClick)="addEmail()"></p-button> <br>
-            </label>-->
-            <label class="stats">{{'Number of fights:' | translate }} {{user.stats.fights}}</label><br>
-            <label class="stats">{{'Number of wins:' | translate }} {{user.stats.wins}}</label><br>
-            <label class="stats">{{'Number of losses:' | translate }} {{user.stats.losses}}</label><br>
-            <label class="stats">{{'Number of deaths:' | translate }} {{user.stats.deaths}}</label><br>
-            <label class="stats">{{'Upgrade points:' | translate}}{{user.stats.upgradePoints}}</label>
+      <div class="dashboard-stack">
+        <div class="dashboard-card">
+          <p class="card-title">{{'Character Core' | translate}}</p>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="tile-label">{{'Damage' | translate}}</span>
+              <div class="stat-control">
+                <div class="stat-tile">
+                  <span class="tile-value">{{user.character.physicalDamage}}</span>
+                </div>
+                @if (user.stats.upgradePoints > 0) {
+                  <button (click)="upgrade('damage')">+</button>
+                }
+              </div>
+            </div>
+            <div class="stat-item">
+              <span class="tile-label">{{'Max HP' | translate}}</span>
+              <div class="stat-control">
+                <div class="stat-tile">
+                  <span class="tile-value">{{user.character.maxHp}}</span>
+                </div>
+                @if (user.stats.upgradePoints > 0) {
+                  <button (click)="upgrade('hp')">+</button>
+                }
+              </div>
+            </div>
+            <div class="stat-item">
+              <span class="tile-label">{{'Max chakra' | translate}}</span>
+              <div class="stat-control">
+                <div class="stat-tile">
+                  <span class="tile-value">{{user.character.maxChakra}}</span>
+                </div>
+                @if (user.stats.upgradePoints > 0) {
+                  <button (click)="upgrade('chakra')">+</button>
+                }
+              </div>
+            </div>
+            <div class="stat-item">
+              <span class="tile-label">{{'Resistance' | translate}}</span>
+              <div class="stat-control">
+                <div class="stat-tile">
+                  <span class="tile-value">{{user.character.resistance}}</span>
+                </div>
+                @if (user.stats.upgradePoints > 0) {
+                  <button (click)="upgrade('resistance')">+</button>
+                }
+              </div>
+            </div>
           </div>
-        }
-        @if (loaded) {
-          <div class="upgradable">
-            <label class="stats">{{'Damage' | translate}}: {{user.character.physicalDamage}}
-              @if (user.stats.upgradePoints > 0) {
-                <button (click)="upgrade('damage')">+</button>
-              }
-            </label><br>
-            <label class="stats">{{'Max HP' | translate}}: {{user.character.maxHp}}
-              @if (user.stats.upgradePoints > 0) {
-                <button (click)="upgrade('hp')">+</button>
-              }
-            </label><br>
-            <label class="stats">{{'Max chakra' | translate}}: {{user.character.maxChakra}}
-              @if (user.stats.upgradePoints > 0) {
-                <button (click)="upgrade('chakra')">+</button>
-              }
-            </label><br>
-            <label class="stats">{{'Resistance' | translate}}: {{user.character.resistance}}
-              @if (user.stats.upgradePoints > 0) {
-                <button (click)="upgrade('resistance')">+</button>
-              }
-            </label><br>
+          <div class="animal-race-row">
+            <span class="tile-label">{{'Animal Race' | translate}}</span>
+            @if (user.character.animalRace != undefined) {
+              <span class="tile-value">{{user.character.animalRace}}</span>
+            } @else {
+              <p-button label="{{'Choose' | translate }}" (onClick)="chooseAnimalRace()"></p-button>
+            }
           </div>
-        }
+          <div class="upgrade-points">{{'Upgrade points' | translate}} {{user.stats.upgradePoints}}</div>
+        </div>
+
+        <div class="dashboard-card">
+          <p class="card-title">{{'Fight Stats' | translate}}</p>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="tile-label">{{'Fights' | translate}}</span>
+              <div class="stat-tile">
+                <span class="tile-value">{{user.stats.fights}}</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <span class="tile-label">{{'Wins' | translate}}</span>
+              <div class="stat-tile">
+                <span class="tile-value">{{user.stats.wins}}</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <span class="tile-label">{{'Losses' | translate}}</span>
+              <div class="stat-tile">
+                <span class="tile-value">{{user.stats.losses}}</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <span class="tile-label">{{'Deaths' | translate}}</span>
+              <div class="stat-tile">
+                <span class="tile-value">{{user.stats.deaths}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="vertical">
-        <input type="checkbox" [(ngModel)]="ready" (change)="changeReadyState()">
-        {{ready ? ('Ready'| translate) : ('Not ready' | translate )}}
-        <br>
-          <app-friends-page></app-friends-page>
+        <div class="ready-actions">
+          <button
+            type="button"
+            class="ready-button"
+            [class.active]="ready"
+            (click)="setReadyState(true)">
+            {{'Ready for fight ⚔️' | translate}}
+          </button>
+          <button
+            type="button"
+            class="ready-button"
+            [class.active]="!ready"
+            (click)="setReadyState(false)">
+            {{'Not ready' | translate}}
+          </button>
         </div>
+        <app-friends-page></app-friends-page>
       </div>
+    </div>
     }
   </div>
 

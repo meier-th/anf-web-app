@@ -778,7 +778,7 @@ export class FightComponent implements OnInit, OnDestroy {
       this.dialog = this.dialogService.open(FightResultComponent, {
         width: '400px', height: '160px'
       });
-      this.router.navigateByUrl('/profile');
+      this.router.navigateByUrl('/main');
     }, 1000);
   }
 

@@ -1,6 +1,7 @@
 import { Component, OnInit, Injector } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import {ProfilePageComponent} from '../profile-page/profile-page.component';
+import {ApiConfigService} from '../core/config/api-config.service';
 
 @Component({
   selector: 'app-animal-race-choice',
@@ -12,7 +13,7 @@ export class AnimalRaceChoiceComponent implements OnInit {
 
   private parent = this.injector.get(ProfilePageComponent);
 
-  constructor(private http: HttpClient, private injector: Injector) { }
+  constructor(private http: HttpClient, private injector: Injector, private apiConfig: ApiConfigService) { }
 
   ngOnInit() {
   }
@@ -27,7 +28,7 @@ export class AnimalRaceChoiceComponent implements OnInit {
       raceName = 'Lidzsvaru';
     else 
       raceName = 'Bugurt';
-    this.http.post<string>('http://localhost:8080/fight/animals/my', 
+    this.http.post<string>(this.apiConfig.buildUrl('/fight/animals/my'),
       new HttpParams().append('racename', raceName), {headers:
         new HttpHeaders(
           {
