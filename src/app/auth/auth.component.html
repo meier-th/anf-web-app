@@ -46,41 +46,81 @@
 }
 
 @if (registration) {
-  <div id="customization">
-    <div class="vertical">
-      <div class="customization">
-        <p>{{'Gender:' | translate}} {{appearance.gender | translate}}</p>
-        <input type="checkbox" [(ngModel)]="gender" (change)="setGender()">
-        <p>{{'Hair color:' | translate}} {{appearance.hairColour.toLowerCase() | translate}}</p>
-        <p-radioButton name="HairColor" label="{{'Yellow ' | translate}}" value="YELLOW" [(ngModel)]="appearance.hairColour"
-        (onClick)="changeHair()"></p-radioButton>
-        <p-radioButton name="HairColor" label="{{'Brown ' | translate}}" value="BROWN" [(ngModel)]="appearance.hairColour"
-        (onClick)="changeHair()"></p-radioButton>
-        <p-radioButton name="HairColor" label="{{'Black ' | translate}}" value="BLACK" [(ngModel)]="appearance.hairColour"
-        (onClick)="changeHair()"></p-radioButton>
-        <p>{{'Skin color:' | translate}} {{appearance.skinColour.toLowerCase() | translate}}</p>
-        <p-radioButton name="SkinColor" label="{{'White ' | translate}}" value="WHITE" [(ngModel)]="appearance.skinColour"
-        (onClick)="changeSkin()"></p-radioButton>
-        <p-radioButton name="SkinColor" label="{{'Latin ' | translate}}" value="LATIN" [(ngModel)]="appearance.skinColour"
-        (onClick)="changeSkin()"></p-radioButton>
-        <p-radioButton name="SkinColor" label="{{'Dark ' | translate}}" value="DARK" [(ngModel)]="appearance.skinColour"
-        (onClick)="changeSkin()"></p-radioButton>
-        <p-radioButton name="SkinColor" label="{{'Black ' | translate}}" value="BLACK" [(ngModel)]="appearance.skinColour"
-        (onClick)="changeSkin()"></p-radioButton>
-        <p>{{'Clothes color:' | translate}} {{appearance.clothesColour.toLowerCase() | translate}}</p>
-        <p-radioButton name="ClothesColor" label="{{'Green ' | translate}}" value="GREEN"
-        [(ngModel)]="appearance.clothesColour" (onClick)="changeClothes()"></p-radioButton>
-        <p-radioButton name="ClothesColor" label="{{'Red ' | translate}}" value="RED"
-        [(ngModel)]="appearance.clothesColour" (onClick)="changeClothes()"></p-radioButton>
-        <p-radioButton name="ClothesColor" label="{{'Blue ' | translate}}" value="BLUE"
-        [(ngModel)]="appearance.clothesColour" (onClick)="changeClothes()"></p-radioButton>
+  <div class="auth-shell customization-shell">
+    <div class="auth-card">
+      <div id="customization">
+        <div class="customization-grid">
+          <div class="customization-controls">
+            <div class="option-group">
+              <p>{{'Gender:' | translate}} {{appearance.gender | translate}}</p>
+              <div class="choice-row">
+                <button type="button" class="choice-btn" [class.active]="appearance.gender === 'MALE'" (click)="selectGender('MALE')">
+                  {{'Male' | translate}}
+                </button>
+                <button type="button" class="choice-btn" [class.active]="appearance.gender === 'FEMALE'" (click)="selectGender('FEMALE')">
+                  {{'Female' | translate}}
+                </button>
+              </div>
+            </div>
+
+            <div class="option-group">
+              <p>{{'Hair color:' | translate}} {{appearance.hairColour.toLowerCase() | translate}}</p>
+              <div class="choice-row">
+                <button type="button" class="choice-btn" [class.active]="appearance.hairColour === 'YELLOW'" (click)="selectHairColour('YELLOW')">
+                  {{'Yellow' | translate}}
+                </button>
+                <button type="button" class="choice-btn" [class.active]="appearance.hairColour === 'BROWN'" (click)="selectHairColour('BROWN')">
+                  {{'Brown' | translate}}
+                </button>
+                <button type="button" class="choice-btn" [class.active]="appearance.hairColour === 'BLACK'" (click)="selectHairColour('BLACK')">
+                  {{'Black' | translate}}
+                </button>
+              </div>
+            </div>
+
+            <div class="option-group">
+              <p>{{'Skin color:' | translate}} {{appearance.skinColour.toLowerCase() | translate}}</p>
+              <div class="choice-row">
+                <button type="button" class="choice-btn" [class.active]="appearance.skinColour === 'WHITE'" (click)="selectSkinColour('WHITE')">
+                  {{'White' | translate}}
+                </button>
+                <button type="button" class="choice-btn" [class.active]="appearance.skinColour === 'LATIN'" (click)="selectSkinColour('LATIN')">
+                  {{'Latin' | translate}}
+                </button>
+                <button type="button" class="choice-btn" [class.active]="appearance.skinColour === 'DARK'" (click)="selectSkinColour('DARK')">
+                  {{'Dark' | translate}}
+                </button>
+                <button type="button" class="choice-btn" [class.active]="appearance.skinColour === 'BLACK'" (click)="selectSkinColour('BLACK')">
+                  {{'Black' | translate}}
+                </button>
+              </div>
+            </div>
+
+            <div class="option-group">
+              <p>{{'Clothes color:' | translate}} {{appearance.clothesColour.toLowerCase() | translate}}</p>
+              <div class="choice-row">
+                <button type="button" class="choice-btn" [class.active]="appearance.clothesColour === 'GREEN'" (click)="selectClothesColour('GREEN')">
+                  {{'Green' | translate}}
+                </button>
+                <button type="button" class="choice-btn" [class.active]="appearance.clothesColour === 'RED'" (click)="selectClothesColour('RED')">
+                  {{'Red' | translate}}
+                </button>
+                <button type="button" class="choice-btn" [class.active]="appearance.clothesColour === 'BLUE'" (click)="selectClothesColour('BLUE')">
+                  {{'Blue' | translate}}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="customization-preview">
+            <app-character></app-character>
+          </div>
+        </div>
+
+        <div class="customization-actions">
+          <p-button label="{{'Confirm' | translate}}" (onClick)="sendAppearance()"></p-button>
+        </div>
       </div>
-      <div class="customization">
-        <app-character></app-character>
-      </div>
-    </div>
-    <div class="vertical">
-      <p-button label="{{'Confirm' | translate}}" (onClick)="sendAppearance()"></p-button>
     </div>
   </div>
 }

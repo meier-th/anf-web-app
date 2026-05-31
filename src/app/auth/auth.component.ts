@@ -1,4 +1,4 @@
-import {Component, Injector, OnInit} from '@angular/core';
+import {AfterViewChecked, Component, Injector, OnInit} from '@angular/core';
 import {HttpClient, HttpErrorResponse, HttpParams} from '@angular/common/http';
 import {CookieService} from 'ngx-cookie-service';
 import {switchMap} from 'rxjs/operators';
@@ -14,7 +14,7 @@ import {ApiConfigService} from '../core/config/api-config.service';
   templateUrl: './auth.component.html',
   styleUrls: ['./auth.component.less']
 })
-export class AuthComponent implements OnInit {
+export class AuthComponent implements OnInit, AfterViewChecked {
 
   authMode: 'signin' | 'signup' = 'signin';
   username = '';
@@ -24,6 +24,7 @@ export class AuthComponent implements OnInit {
   registration = false;
   appearance = new Appearance();
   gender = false;
+  private customizationPreviewSynced = false;
 
   constructor(private httpClient: HttpClient, private cookieService: CookieService, private injector: Injector,
     private pipe: TranslatePipe, private authApi: AuthApiService, private apiConfig: ApiConfigService) {
@@ -77,6 +78,7 @@ export class AuthComponent implements OnInit {
       ).subscribe({
         next: () => {
           this.registration = true;
+          this.customizationPreviewSynced = false;
           this.cookieService.set('username', this.username);
           this.cookieService.set('loggedIn', 'true');
           this.parent.loggedIn = true;
@@ -172,6 +174,36 @@ export class AuthComponent implements OnInit {
       (<HTMLElement>females[0]).style.display = 'none';
     }
     this.appearance.gender = this.gender ? 'FEMALE' : 'MALE';
+  }
+
+  ngAfterViewChecked() {
+    if (this.registration && !this.customizationPreviewSynced) {
+      this.changeClothes();
+      this.changeHair();
+      this.changeSkin();
+      this.setGender();
+      this.customizationPreviewSynced = true;
+    }
+  }
+
+  selectGender(gender: 'MALE' | 'FEMALE') {
+    this.gender = gender === 'FEMALE';
+    this.setGender();
+  }
+
+  selectHairColour(colour: 'YELLOW' | 'BROWN' | 'BLACK') {
+    this.appearance.hairColour = colour;
+    this.changeHair();
+  }
+
+  selectSkinColour(colour: 'WHITE' | 'LATIN' | 'DARK' | 'BLACK') {
+    this.appearance.skinColour = colour;
+    this.changeSkin();
+  }
+
+  selectClothesColour(colour: 'GREEN' | 'RED' | 'BLUE') {
+    this.appearance.clothesColour = colour;
+    this.changeClothes();
   }
 
   sendAppearance() {
