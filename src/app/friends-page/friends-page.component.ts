@@ -33,11 +33,11 @@ export class FriendsPageComponent implements OnInit {
     this.inRequested = [];
     this.outRequested = [];
     
-    this.http.get<User[]>('http://localhost:31480/friends/requests/incoming', {withCredentials: true})
+    this.http.get<User[]>('http://localhost:8080/friends/requests/incoming', {withCredentials: true})
       .subscribe(data => this.inRequested = data);
-    this.http.get<User[]>('http://localhost:31480/friends/requests/outgoing', {withCredentials: true})
+    this.http.get<User[]>('http://localhost:8080/friends/requests/outgoing', {withCredentials: true})
       .subscribe(data => this.outRequested = data);
-    this.http.get<User[]>('http://localhost:31480/friends', {withCredentials: true})
+    this.http.get<User[]>('http://localhost:8080/friends', {withCredentials: true})
       .subscribe(data => {
         this.friends = data;
         this.checkOnline();
@@ -47,7 +47,7 @@ export class FriendsPageComponent implements OnInit {
   }
 
   initializeWebSockets() {
-    const ws = new SockJS('http://localhost:31480/socket');
+    const ws = new SockJS('http://localhost:8080/socket');
     this.stompClient = Stomp.over(ws);
     const that = this;
     this.stompClient.connect({}, function (frame) {
@@ -86,14 +86,14 @@ export class FriendsPageComponent implements OnInit {
             const username = str.substring(i + 2, str.length);
             let user: User;
             // console.log("username: "+username);
-            const url = 'http://localhost:31480/users/' + username;
+            const url = 'http://localhost:8080/users/' + username;
             that.http.get<User>(url, {withCredentials: true})
               .subscribe(data => {
                 user = data;
                 user.online = false;
                 user.offline = true;
                 let ready = [];
-                that.http.get<string[]>('http://localhost:31480/ready', {withCredentials: true})
+                that.http.get<string[]>('http://localhost:8080/ready', {withCredentials: true})
                   .subscribe(data => {
                     ready = data;
                     if (ready.includes(user.login)) {
@@ -116,7 +116,7 @@ export class FriendsPageComponent implements OnInit {
             const username = str.substring(i + 2, str.length);
             let user: User;
             // console.log("username: "+username);
-            const url = 'http://localhost:31480/users/' + username;
+            const url = 'http://localhost:8080/users/' + username;
             that.http.get<User>(url, {withCredentials: true})
               .subscribe(data => {
                 user = data;
@@ -130,7 +130,7 @@ export class FriendsPageComponent implements OnInit {
             const username = str.substring(i + 2, str.length);
             let user: User;
             // console.log("username: "+username);
-            const url = 'http://localhost:31480/users/' + username;
+            const url = 'http://localhost:8080/users/' + username;
             that.http.get<User>(url, {withCredentials: true})
               .subscribe(data => {
                 user = data;
@@ -144,7 +144,7 @@ export class FriendsPageComponent implements OnInit {
             const username = str.substring(i + 2, str.length);
             let user: User;
             // console.log("username: "+username);
-            const url = 'http://localhost:31480/users/' + username;
+            const url = 'http://localhost:8080/users/' + username;
             that.http.get<User>(url, {withCredentials: true})
               .subscribe(data => {
                 user = data;
@@ -159,7 +159,7 @@ export class FriendsPageComponent implements OnInit {
           const username = str.substring(i + 1, str.length);
           let user: User;
           // console.log("username: "+username);
-          const url = 'http://localhost:31480/users/' + username;
+          const url = 'http://localhost:8080/users/' + username;
           that.http.get<User>(url, {withCredentials: true})
             .subscribe(data => {
               user = data;
@@ -174,7 +174,7 @@ export class FriendsPageComponent implements OnInit {
   addFriend(req: User): void {
     req.offline = true;
     req.online = false;
-    this.http.post('http://localhost:31480/profile/friends',
+    this.http.post('http://localhost:8080/profile/friends',
       new HttpParams().set('login', req.login),
       {
         headers:
@@ -185,7 +185,7 @@ export class FriendsPageComponent implements OnInit {
         withCredentials: true
       }).subscribe(msg => {
     });
-    this.http.get<string[]>('http://localhost:31480/ready', {withCredentials: true})
+    this.http.get<string[]>('http://localhost:8080/ready', {withCredentials: true})
       .subscribe(data => {
         const ready: string[] = data;
         if (ready.includes(req.login)) {
@@ -199,7 +199,7 @@ export class FriendsPageComponent implements OnInit {
 
   deleteRequest(req: User): void {
     const username = req.login;
-    this.http.delete<string>('http://localhost:31480/profile/friends/requests', {
+    this.http.delete<string>('http://localhost:8080/profile/friends/requests', {
       withCredentials: true,
       params: new HttpParams().append('username', username).append('type', 'out')
     }).subscribe(data => {
@@ -214,7 +214,7 @@ export class FriendsPageComponent implements OnInit {
       frnd.offline = true;
       frnd.online = false;
     });
-    this.http.get<string[]>('http://localhost:31480/ready', {withCredentials: true})
+    this.http.get<string[]>('http://localhost:8080/ready', {withCredentials: true})
       .subscribe(result => {
         console.log(result);
         this.friends.forEach(friend => {
@@ -231,7 +231,7 @@ export class FriendsPageComponent implements OnInit {
 
   declineReq(req: User): void {
     const username = req.login;
-    this.http.delete<string>('http://localhost:31480/profile/friends/requests', {
+    this.http.delete<string>('http://localhost:8080/profile/friends/requests', {
       withCredentials: true,
       params: new HttpParams().append('username', username).append('type', 'in')
     }).subscribe(data => {
@@ -243,7 +243,7 @@ export class FriendsPageComponent implements OnInit {
 
   deleteFriend(usr: User): void {
     const username = usr.login;
-    this.http.delete<string>('http://localhost:31480/profile/friends', {
+    this.http.delete<string>('http://localhost:8080/profile/friends', {
       withCredentials: true,
       params: new HttpParams().append('username', username)
     }).subscribe(data => {

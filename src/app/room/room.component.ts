@@ -25,7 +25,7 @@ export class RoomComponent implements OnInit {
 
   join() {
     this.accepted = true;
-    this.http.get('http://localhost:31480/fight/join', {
+    this.http.get('http://localhost:8080/fight/join', {
       withCredentials: true,
       params: new HttpParams()
         .append('author', this.author)

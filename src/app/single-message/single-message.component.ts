@@ -22,7 +22,7 @@ export class SingleMessageComponent implements OnInit {
   }
 
   confirm(): void {
-    this.http.post('http://localhost:31480/profile/messages', null, {
+    this.http.post('http://localhost:8080/profile/messages', null, {
       withCredentials: true,
       params: new HttpParams()
         .append('message', this.input)

@@ -32,7 +32,7 @@ export class UsersListComponent implements OnInit {
 
   ngOnInit() {
         let tempUsrs: Userdata[] = [];
-        this.http.get<User[]>('http://localhost:31480/users', {withCredentials: true})
+        this.http.get<User[]>('http://localhost:8080/users', {withCredentials: true})
             .subscribe(dt => {
               dt.forEach(usr => {
                 var usrdt = new Userdata();
@@ -50,7 +50,7 @@ export class UsersListComponent implements OnInit {
                 usrdt.noRelations = true;
                 tempUsrs.push(usrdt);
               });
-              this.http.get<User[]>('http://localhost:31480/friends/requests/outgoing',
+              this.http.get<User[]>('http://localhost:8080/friends/requests/outgoing',
                 {withCredentials: true}).subscribe(dt => {
                   tempUsrs.forEach(ud => {
                     if (dt.map(u => u.login).includes(ud.user.login)) {
@@ -58,7 +58,7 @@ export class UsersListComponent implements OnInit {
                       ud.noRelations = false;
                     }
                   });
-                  this.http.get<User[]>('http://localhost:31480/friends/requests/incoming',
+                  this.http.get<User[]>('http://localhost:8080/friends/requests/incoming',
                     {withCredentials: true}).subscribe(dt => {
                       tempUsrs.forEach(ud => {
                         if (dt.map(u => u.login).includes(ud.user.login)) {
@@ -66,7 +66,7 @@ export class UsersListComponent implements OnInit {
                           ud.noRelations = false;
                         }
                       });
-                      this.http.get<User>('http://localhost:31480/profile', {withCredentials: true})
+                      this.http.get<User>('http://localhost:8080/profile', {withCredentials: true})
                         .subscribe(usr => {
                           this.viewer = usr;
                           if (this.viewer.roles.map(role => role.role).includes('ADMIN')) 
@@ -76,7 +76,7 @@ export class UsersListComponent implements OnInit {
                             if (ud.user.login === this.viewer.login)
                               tempUsrs.splice(tempUsrs.indexOf(ud), 1);
                           });
-                          this.http.get<User[]>('http://localhost:31480/friends', {withCredentials: true})
+                          this.http.get<User[]>('http://localhost:8080/friends', {withCredentials: true})
                             .subscribe(data => {
                               tempUsrs.forEach(ud => {
                                 if (data.map(u => u.login).includes(ud.user.login)) {
@@ -85,7 +85,7 @@ export class UsersListComponent implements OnInit {
                                 }
                               });
                               var ready: string[] = [];
-                              this.http.get<string[]>('http://localhost:31480/ready', {withCredentials: true})
+                              this.http.get<string[]>('http://localhost:8080/ready', {withCredentials: true})
                                 .subscribe(rd => {
                                   ready = rd;
                                   tempUsrs.forEach(ud => {
@@ -108,7 +108,7 @@ export class UsersListComponent implements OnInit {
   }
 
   initializeWebSockets(): void {
-    let ws = new SockJS("http://localhost:31480/socket");
+    let ws = new SockJS("http://localhost:8080/socket");
     this.stompClient = Stomp.over(ws);
     let that = this;
     this.stompClient.connect({}, function(frame) {
@@ -131,7 +131,7 @@ export class UsersListComponent implements OnInit {
         });
         else {
           var newUser: User;
-          that.http.get<User>('http://localhost:31480/users/'+user, {withCredentials: true})
+          that.http.get<User>('http://localhost:8080/users/'+user, {withCredentials: true})
             .subscribe(usr => {
               newUser = usr;
               var newUd: Userdata = new Userdata();
@@ -210,21 +210,21 @@ export class UsersListComponent implements OnInit {
 
 
   deleteReq(ud: Userdata): void {
-    this.http.delete<string>('http://localhost:31480/profile/friends/requests',
+    this.http.delete<string>('http://localhost:8080/profile/friends/requests',
       {withCredentials: true, params: new HttpParams().append('username', ud.user.login).append('type', 'out')}).subscribe();
     ud.noRelations = true;
     ud.requested = false;
   }
 
   declineReq(ud: Userdata): void {
-    this.http.delete<string>('http://localhost:31480/profile/friends/requests',
+    this.http.delete<string>('http://localhost:8080/profile/friends/requests',
       {withCredentials: true, params: new HttpParams().append('username', ud.user.login).append('type', 'in')}).subscribe();
     ud.noRelations = true;
     ud.requesting = false;
   }
 
   acceptReq(ud: Userdata): void {
-    this.http.post('http://localhost:31480/profile/friends', 
+    this.http.post('http://localhost:8080/profile/friends', 
     new HttpParams().set('login', ud.user.login),
     { headers:
       new HttpHeaders (
@@ -237,7 +237,7 @@ export class UsersListComponent implements OnInit {
   }
 
   sendRequest(ud: Userdata): void {
-    this.http.post('http://localhost:31480/profile/friends/requests', 
+    this.http.post('http://localhost:8080/profile/friends/requests', 
     new HttpParams().set('username', ud.user.login),
     { headers:
       new HttpHeaders (
@@ -259,7 +259,7 @@ export class UsersListComponent implements OnInit {
   }
 
   grantAdmin(ud: Userdata): void {
-    var url = 'http://localhost:31480/admin/users/'+ud.user.login+'/grantAdmin';
+    var url = 'http://localhost:8080/admin/users/'+ud.user.login+'/grantAdmin';
     this.http.post(url, 
     new HttpParams(),
     { headers:

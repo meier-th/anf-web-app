@@ -5,12 +5,12 @@ describe('ApiConfigService', () => {
     const service = new ApiConfigService();
 
     expect(service.buildUrl('/profile')).toContain('/profile');
-    expect(service.buildUrl('/profile')).toContain('http://localhost:31480');
+    expect(service.buildUrl('/profile')).toContain('http://localhost:8080');
   });
 
   it('normalizes paths without leading slash', () => {
     const service = new ApiConfigService();
 
-    expect(service.buildUrl('fight/queue')).toBe('http://localhost:31480/fight/queue');
+    expect(service.buildUrl('fight/queue')).toBe('http://localhost:8080/fight/queue');
   });
 });
