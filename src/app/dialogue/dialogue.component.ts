@@ -25,12 +25,12 @@ export class DialogueComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.httpClient.get<User>('http://localhost:31480/profile', {withCredentials: true}).subscribe(data => {
+    this.httpClient.get<User>('http://localhost:8080/profile', {withCredentials: true}).subscribe(data => {
       this.login = data.login;
     });
     this.interlocutor = this.parent.router.url;
     this.interlocutor = this.interlocutor.substring(this.interlocutor.lastIndexOf('/') + 1);
-    this.httpClient.get<Message[]>('http://localhost:31480/profile/messages/dialog', {
+    this.httpClient.get<Message[]>('http://localhost:8080/profile/messages/dialog', {
       withCredentials: true,
       params: new HttpParams().append('secondName', this.interlocutor)
     }).subscribe((data) => {
@@ -44,7 +44,7 @@ export class DialogueComponent implements OnInit {
     if (this.input.length === 0) {
       return;
     }
-    this.httpClient.post('http://localhost:31480/profile/messages', null, {
+    this.httpClient.post('http://localhost:8080/profile/messages', null, {
       withCredentials: true,
       params: new HttpParams()
         .append('message', this.input)
@@ -64,7 +64,7 @@ export class DialogueComponent implements OnInit {
   }
 
   initializeWebSocketConnection() {
-    const ws = new SockJS('http://localhost:31480/socket');
+    const ws = new SockJS('http://localhost:8080/socket');
     this.stompClient = Stomp.over(ws);
     const that = this;
     this.stompClient.connect({}, function (frame) {

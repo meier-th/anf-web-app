@@ -43,7 +43,7 @@ export class MessagesComponent implements OnInit {
     this.dialogues = [];
     // this.http.get<User>('http://localhost:8080/profile', {withCredentials: true})
     //   .subscribe(data => this.user = data);
-    this.http.get<string[]>('http://localhost:31480/profile/dialogs',
+    this.http.get<string[]>('http://localhost:8080/profile/dialogs',
       {withCredentials: true}).subscribe(data => {
       this.dialogues = data;
       this.loaded = true;
@@ -52,7 +52,7 @@ export class MessagesComponent implements OnInit {
   }
 
   initializeWebSocketConnection() {
-    const ws = new SockJS('http://localhost:31480/socket');
+    const ws = new SockJS('http://localhost:8080/socket');
     this.stompClient = Stomp.over(ws);
     const that = this;
     this.stompClient.connect({}, function (frame) {

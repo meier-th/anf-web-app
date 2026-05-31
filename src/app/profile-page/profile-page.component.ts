@@ -81,7 +81,7 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
 
   ngOnInit() {
     //document.documentElement.style.overflowY = 'hidden';
-    this.http.get<User>('http://localhost:31480/profile', {withCredentials: true}).subscribe(data => {
+    this.http.get<User>('http://localhost:8080/profile', {withCredentials: true}).subscribe(data => {
       this.loaded = true;
       this.user = data;
       this.user.character.resistance = parseFloat(this.user.character.resistance.toFixed(2));
@@ -94,7 +94,7 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   subscribeForWebsockets() {
-    const ws = new SockJS('http://localhost:31480/socket');
+    const ws = new SockJS('http://localhost:8080/socket');
     this.stompClient = Stomp.over(ws);
     const that = this;
     this.stompClient.connect({}, function (frame) {
@@ -117,10 +117,10 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
       setTimeout(() => {
         this.ready = false;
       }, 300000);
-      request = this.http.get('http://localhost:31480/profile/online', {withCredentials: true});
+      request = this.http.get('http://localhost:8080/profile/online', {withCredentials: true});
     } else {
       this.ready = false;
-      request = this.http.get('http://localhost:31480/profile/offline', {withCredentials: true});
+      request = this.http.get('http://localhost:8080/profile/offline', {withCredentials: true});
     }
     request.subscribe(() => {
       this.cookieService.set('ready', this.ready.toString(), new Date(Date.now() + 300000));
@@ -205,7 +205,7 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   upgrade(param: string): void {
-    this.http.post('http://localhost:31480/profile/character',
+    this.http.post('http://localhost:8080/profile/character',
       new HttpParams().set('quality', param),
       {
         headers:

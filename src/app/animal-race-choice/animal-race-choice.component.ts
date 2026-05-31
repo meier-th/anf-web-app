@@ -27,7 +27,7 @@ export class AnimalRaceChoiceComponent implements OnInit {
       raceName = 'Lidzsvaru';
     else 
       raceName = 'Bugurt';
-    this.http.post<string>('http://localhost:31480/fight/animals/my', 
+    this.http.post<string>('http://localhost:8080/fight/animals/my', 
       new HttpParams().append('racename', raceName), {headers:
         new HttpHeaders(
           {

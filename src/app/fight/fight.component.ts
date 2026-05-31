@@ -107,7 +107,7 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   initializeWebSockets() {
-    const ws = new SockJS('http://localhost:31480/socket');
+    const ws = new SockJS('http://localhost:8080/socket');
     this.stompClient = Stomp.over(ws);
     const that = this;
     this.stompClient.connect({}, function (frame) {
@@ -476,7 +476,7 @@ export class FightComponent implements OnInit, OnDestroy {
 
   getFightInfo(type: string) {
     if (type.toLowerCase() === 'pvp') {
-      this.http.post('http://localhost:31480/fight/info', null, {
+      this.http.post('http://localhost:8080/fight/info', null, {
         withCredentials: true,
         params: new HttpParams().append('id', this.id.toString())
       }).subscribe((data: {
@@ -513,7 +513,7 @@ export class FightComponent implements OnInit, OnDestroy {
         this.summonEnabled = false;
       }
     } else {
-      this.http.post('http://localhost:31480/fight/info', null, {
+      this.http.post('http://localhost:8080/fight/info', null, {
         withCredentials: true,
         params: new HttpParams().append('id', this.id.toString())
       }).subscribe((data: {
@@ -596,7 +596,7 @@ export class FightComponent implements OnInit, OnDestroy {
         .find(sh => sh.spellUse.name === 'Earth Strike').spellLevel)) {
       this.selectedSpell = 'Physical attack';
     }
-    this.http.post('http://localhost:31480/fight/attack', null, {
+    this.http.post('http://localhost:8080/fight/attack', null, {
       withCredentials: true,
       params: new HttpParams()
         .append('fightId', this.id.toString())
@@ -613,7 +613,7 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   summon() {
-    this.http.post('http://localhost:31480/fight/summon' +
+    this.http.post('http://localhost:8080/fight/summon' +
       this.type.substring(0, 1).toUpperCase() +
       this.type.substring(1).toLowerCase(), null, {
       withCredentials: true,

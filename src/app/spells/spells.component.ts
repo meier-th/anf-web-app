@@ -25,7 +25,7 @@ export class SpellsComponent implements OnInit {
   constructor(private http: HttpClient) { }
 
   ngOnInit() {
-    this.http.get<User>('http://localhost:31480/profile', {withCredentials: true})
+    this.http.get<User>('http://localhost:8080/profile', {withCredentials: true})
       .subscribe(data => {
         this.user = data;
         const airSpellHandling = this.user.character.spellsKnown.find(sh => sh.spellUse.name === 'Air Strike');
@@ -61,7 +61,7 @@ export class SpellsComponent implements OnInit {
   }
 
   learnOrUpgrade(spell: string): void {
-    this.http.post<string>('http://localhost:31480/fight/spell/my',
+    this.http.post<string>('http://localhost:8080/fight/spell/my',
     new HttpParams().set('spellname', spell),
       {
         headers:

@@ -38,13 +38,13 @@ export class QueueComponent implements OnInit, OnDestroy {
     this.area = this.areaService.selectedArea;
     this.type = this.areaService.pvp ? 'PVP' : 'PVE';
     console.log(this.areaService);
-    this.http.get('http://localhost:31480/ready', {withCredentials: true}).subscribe((data: string[]) => {
+    this.http.get('http://localhost:8080/ready', {withCredentials: true}).subscribe((data: string[]) => {
       this.users = data.filter((item) => item !== this.cookieService.get('username'));
     });
     this.selected = [];
     this.disabled = this.areaService.pvp;
     this.initializeWebsockets();
-    this.http.get('http://localhost:31480/fight/createQueue', {
+    this.http.get('http://localhost:8080/fight/createQueue', {
       withCredentials: true
     }).subscribe((response: { queueId: number }) => {
       this.id = response.queueId;
@@ -65,7 +65,7 @@ export class QueueComponent implements OnInit, OnDestroy {
 
   startFight() {
     if (this.type === 'PVP') {
-      this.http.get('http://localhost:31480/fight/startPvp', {
+      this.http.get('http://localhost:8080/fight/startPvp', {
         withCredentials: true,
         params: new HttpParams().append('queueId', this.id.toString())
       }).subscribe((data: {
@@ -81,7 +81,7 @@ export class QueueComponent implements OnInit, OnDestroy {
       });
 
     } else {
-      this.http.get('http://localhost:31480/fight/startPve', {
+      this.http.get('http://localhost:8080/fight/startPve', {
         withCredentials: true,
         params: new HttpParams().append('queueId', this.id.toString())
         .append('bossId', this.area)
@@ -98,7 +98,7 @@ export class QueueComponent implements OnInit, OnDestroy {
 
   send(type: string, username: string, id: number): void {
     this.disabled = true;
-    this.http.get('http://localhost:31480/fight/invite', {
+    this.http.get('http://localhost:8080/fight/invite', {
       withCredentials: true,
       params: new HttpParams()
         .append('type', type)
@@ -118,7 +118,7 @@ export class QueueComponent implements OnInit, OnDestroy {
   }
 
   initializeWebsockets(): void {
-    const ws = new SockJS('http://localhost:31480/socket');
+    const ws = new SockJS('http://localhost:8080/socket');
     this.stompClient = Stomp.over(ws);
     const that = this;
     this.stompClient.connect({}, function (frame) {
@@ -155,7 +155,7 @@ export class QueueComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (!this.started) {
-      this.http.get('http://localhost:31480/fight/closeQueue', {
+      this.http.get('http://localhost:8080/fight/closeQueue', {
         withCredentials: true,
         params: new HttpParams().append('id', this.id.toString())
       }).subscribe();

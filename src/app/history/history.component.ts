@@ -17,7 +17,7 @@ export class HistoryComponent implements OnInit {
   constructor(private http: HttpClient) { }
 
   ngOnInit() {
-    this.http.get<User>('http://localhost:31480/profile', {withCredentials: true})
+    this.http.get<User>('http://localhost:8080/profile', {withCredentials: true})
       .subscribe(data => {
         this.user = data;
         this.user.character.fights.forEach(fight => {
@@ -33,7 +33,7 @@ export class HistoryComponent implements OnInit {
           this.fights.push(histrecord);
         });
         var pvps: PVPFight[] = [];
-      this.http.get<PVPFight[]>('http://localhost:31480/profile/pvphistory', {withCredentials: true})
+      this.http.get<PVPFight[]>('http://localhost:8080/profile/pvphistory', {withCredentials: true})
         .subscribe(data => {
           pvps = data;
           pvps.forEach(fight => {

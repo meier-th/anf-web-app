@@ -15,7 +15,7 @@ export class ChatComponent implements OnInit {
 
   user: User;
   messages: ChatMessage[];
-  private subscriptionURL = 'http://localhost:31480/socket';
+  private subscriptionURL = 'http://localhost:8080/socket';
   private stompClient;
   input: string;
   asSystem: boolean = false;
@@ -57,7 +57,7 @@ export class ChatComponent implements OnInit {
     this.messages = [];
     const msg = new ChatMessage('SYSTEM', 'Welcome to the chat!');
     this.messages.push(msg);
-    this.http.get<User>('http://localhost:31480/profile', {withCredentials: true}).subscribe(data => {
+    this.http.get<User>('http://localhost:8080/profile', {withCredentials: true}).subscribe(data => {
       this.user = data;
       this.user.roles.forEach(role => console.log(role));
       if (this.user.roles.map(role => role.role).includes('ADMIN')) 
