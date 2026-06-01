@@ -1,4 +1,4 @@
-import {Component, HostListener, OnInit} from '@angular/core';
+import {Component, HostListener, OnDestroy, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
@@ -12,6 +12,7 @@ import {TranslatePipe} from '../services/translate.pipe';
 import {AuthApiService} from '../core/api/auth-api.service';
 import {SessionStore} from '../core/state/session.store';
 import {WebsocketGatewayService} from '../core/realtime/websocket-gateway.service';
+import {HistoryComponent} from '../history/history.component';
 
 @Component({
   selector: 'app-main',
@@ -20,7 +21,7 @@ import {WebsocketGatewayService} from '../core/realtime/websocket-gateway.servic
   styleUrls: ['./main.component.less'],
   providers: [DialogService, ConfirmationService]
 })
-export class MainComponent implements OnInit {
+export class MainComponent implements OnInit, OnDestroy {
   constructor(public router: Router, private dialogService: DialogService,
               private cookieService: CookieService, private authApi: AuthApiService,
               public messageService: MessageService, private fightService: FightService,
@@ -37,6 +38,7 @@ export class MainComponent implements OnInit {
   display = false;
   languageMenuOpen = false;
   currentLanguage: 'en' | 'ru' = 'en';
+  private onlineHeartbeatId: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit() {
     this.loggedIn = this.cookieService.get('loggedIn') === 'true';
@@ -49,12 +51,15 @@ export class MainComponent implements OnInit {
         this.sessionStore.setSession(true, response.login);
         this.cookieService.set('username', response.login);
         this.cookieService.set('loggedIn', 'true');
+        this.authApi.setOnline().subscribe();
+        this.startOnlineHeartbeat();
         if (this.router.url === '/start' || this.router.url === '/') {
           this.router.navigateByUrl('main');
         }
       }, (response: { authorized: boolean, login: string }) => {
         this.loggedIn = false;
         this.sessionStore.clearSession();
+      this.stopOnlineHeartbeat();
         this.cookieService.delete('loggedIn');
         this.cookieService.delete('username');
         this.router.navigateByUrl('start');
@@ -96,18 +101,37 @@ export class MainComponent implements OnInit {
     this.dialog.close();
     this.loggedIn = true;
     this.sessionStore.setSession(true, this.login ?? '');
+    this.authApi.setOnline().subscribe();
+    this.startOnlineHeartbeat();
     this.initializeWebsockets();
     this.router.navigateByUrl('main');
   }
 
   logout() {
+    this.authApi.setOffline().subscribe();
     this.authApi.logout().subscribe();
     this.loggedIn = false;
     this.sessionStore.clearSession();
+    this.stopOnlineHeartbeat();
     this.router.navigateByUrl('start');
     this.cookieService.delete('loggedIn');
     this.cookieService.delete('username');
     this.messageService.add({severity: 'success', summary: this.pipe.transform('Success'), detail: this.pipe.transform('Logged out')});
+  }
+
+  openHistoryDialog(): void {
+    this.dialog = this.dialogService.open(HistoryComponent, {
+      width: '980px',
+      height: '640px',
+      closable: false
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.loggedIn) {
+      this.authApi.setOffline().subscribe();
+    }
+    this.stopOnlineHeartbeat();
   }
 
   initializeWebsockets(): void {
@@ -135,6 +159,25 @@ export class MainComponent implements OnInit {
         that.dialog.close();
       });
     });
+  }
+
+  private startOnlineHeartbeat(): void {
+    if (this.onlineHeartbeatId) {
+      return;
+    }
+    this.onlineHeartbeatId = setInterval(() => {
+      if (this.loggedIn) {
+        this.authApi.setOnline().subscribe();
+      }
+    }, 120000);
+  }
+
+  private stopOnlineHeartbeat(): void {
+    if (!this.onlineHeartbeatId) {
+      return;
+    }
+    clearInterval(this.onlineHeartbeatId);
+    this.onlineHeartbeatId = null;
   }
 
 }

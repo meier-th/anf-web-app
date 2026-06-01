@@ -1,39 +1,52 @@
-<h2>{{'Users' | translate}}:</h2>
+<h2>{{'Users' | translate}}</h2>
 <input [(ngModel)]="searchText" placeholder="{{'Search' | translate}}" pInputText id="search">
 <div class="fullScope">
-  <ul id = "usersList">
+  <ul id="usersList">
     @for (userdata of usersList | searchUsers : searchText; track userdata) {
-      <li>
-        <label class='username'>{{userdata.user.login}}</label>
-        <label class='status'>⚫</label>
-        @if (userdata.friend) {
-          <label class='friend'>{{'Friend' | translate}}</label>
-          } <br>
+      <li class="user-item">
+        <div class="user-head">
+          <div class="user-name-line">
+            <label class="username">{{userdata.user.login}}</label>
+            @if (userdata.friend) {
+              <label class="friend inline-friend">{{'Friend' | translate}}</label>
+            }
+          </div>
+          <label class="status" [class.online]="userdata.user.online" [class.offline]="userdata.user.offline">●</label>
+        </div>
+        @if (userdata.requested) {
+          <label class="requested">{{'Requested' | translate}}</label>
+        }
+        @if (userdata.requesting) {
+          <label class="requesting">{{'Requesting' | translate}}</label>
+        }
+
+        <div class="actions-row">
           @if (userdata.requested) {
-            <label class='requested'>{{'Requested' | translate}}
-              <p-button class='removeRequest' label="{{'Delete request' | translate}}" (onClick) = 'deleteReq(userdata)'></p-button>
-            </label>
+            <p-button class="removeRequest user-action-button" label="{{'Delete request' | translate}}" (onClick)='deleteReq(userdata)'></p-button>
           }
           @if (userdata.requesting) {
-            <label class='requesting'>{{'Requesting' | translate}}
-              <p-button class='acceptRequest' label="{{'Accept request' | translate}}" (onClick) = 'acceptReq(userdata)'></p-button>
-              <p-button class='removeRequest' label="{{'Decline request' | translate}}" (onClick) = 'declineReq(userdata)'></p-button>
-              <br>
-              </label>
+            <p-button class="acceptRequest user-action-button" label="{{'Accept request' | translate}}" (onClick)='acceptReq(userdata)'></p-button>
+            <p-button class="removeRequest user-action-button" label="{{'Decline request' | translate}}" (onClick)='declineReq(userdata)'></p-button>
+          }
+          <div class="chat-action">
+            <p-button class="neutral user-action-button" label="{{'Chat' | translate}}" (onClick)='openMessageWindow(userdata)'></p-button>
+            @if (getUnreadCount(userdata.user.login) > 0) {
+              <span class="unread-badge">{{getUnreadCount(userdata.user.login)}}</span>
             }
-            <p-button class='neutral' label="{{'message' | translate}}" (onClick)='openMessageWindow(userdata)'></p-button>
-            @if (userdata.noRelations) {
-              <p-button class='neutral' label="{{'Send friends request' | translate}}" (onClick)='sendRequest(userdata)'></p-button>
-            }
-            @if (adminView) {
-              <label class = 'adminPanel'>
-                {{userdata.admin ? ('Admin' | translate) : ('User' | translate) }}
-                @if (userdata.notAdmin) {
-                  <p-button class='acceptRequest' label="{{'Grant admin role' | translate}}" (onClick)='grantAdmin(userdata)'></p-button>
-                }
-              </label>
-            }
-          </li>
-        }
-      </ul>
-    </div>
+          </div>
+          @if (userdata.noRelations) {
+            <p-button class="neutral user-action-button" label="{{'Add friend' | translate}}" (onClick)='sendRequest(userdata)'></p-button>
+          }
+          @if (adminView) {
+            <label class="adminPanel">
+              {{userdata.admin ? ('Admin' | translate) : ('User' | translate) }}
+              @if (userdata.notAdmin) {
+                <p-button class="acceptRequest user-action-button" label="{{'Grant admin role' | translate}}" (onClick)='grantAdmin(userdata)'></p-button>
+              }
+            </label>
+          }
+        </div>
+      </li>
+    }
+  </ul>
+</div>

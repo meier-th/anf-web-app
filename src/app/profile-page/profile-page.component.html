@@ -32,6 +32,12 @@
       <div class="dashboard-stack">
         <div class="dashboard-card">
           <p class="card-title">{{'Character Core' | translate}}</p>
+          @if (user.stats.upgradePoints > 0) {
+            <div class="upgrade-points">
+              <span class="upgrade-points-count">{{user.stats.upgradePoints}}</span>
+              <span>{{'Upgrade points' | translate}}</span>
+            </div>
+          }
           <div class="stats-grid">
             <div class="stat-item">
               <span class="tile-label">{{'Damage' | translate}}</span>
@@ -40,7 +46,11 @@
                   <span class="tile-value">{{user.character.physicalDamage}}</span>
                 </div>
                 @if (user.stats.upgradePoints > 0) {
-                  <button (click)="upgrade('damage')">+</button>
+                  <button class="upgrade-button" (click)="upgrade('damage')" aria-label="Upgrade damage">
+                    <svg class="upgrade-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 4l-7 8h4v8h6v-8h4z"></path>
+                    </svg>
+                  </button>
                 }
               </div>
             </div>
@@ -51,7 +61,11 @@
                   <span class="tile-value">{{user.character.maxHp}}</span>
                 </div>
                 @if (user.stats.upgradePoints > 0) {
-                  <button (click)="upgrade('hp')">+</button>
+                  <button class="upgrade-button" (click)="upgrade('hp')" aria-label="Upgrade max HP">
+                    <svg class="upgrade-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 4l-7 8h4v8h6v-8h4z"></path>
+                    </svg>
+                  </button>
                 }
               </div>
             </div>
@@ -62,7 +76,11 @@
                   <span class="tile-value">{{user.character.maxChakra}}</span>
                 </div>
                 @if (user.stats.upgradePoints > 0) {
-                  <button (click)="upgrade('chakra')">+</button>
+                  <button class="upgrade-button" (click)="upgrade('chakra')" aria-label="Upgrade max chakra">
+                    <svg class="upgrade-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 4l-7 8h4v8h6v-8h4z"></path>
+                    </svg>
+                  </button>
                 }
               </div>
             </div>
@@ -73,7 +91,11 @@
                   <span class="tile-value">{{user.character.resistance}}</span>
                 </div>
                 @if (user.stats.upgradePoints > 0) {
-                  <button (click)="upgrade('resistance')">+</button>
+                  <button class="upgrade-button" (click)="upgrade('resistance')" aria-label="Upgrade resistance">
+                    <svg class="upgrade-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 4l-7 8h4v8h6v-8h4z"></path>
+                    </svg>
+                  </button>
                 }
               </div>
             </div>
@@ -86,7 +108,6 @@
               <p-button label="{{'Choose' | translate }}" (onClick)="chooseAnimalRace()"></p-button>
             }
           </div>
-          <div class="upgrade-points">{{'Upgrade points' | translate}} {{user.stats.upgradePoints}}</div>
         </div>
 
         <div class="dashboard-card">

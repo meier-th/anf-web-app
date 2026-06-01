@@ -1,7 +1,21 @@
-<h2 id="header">{{'Send message to' | translate}}: {{username}}</h2>
-<div>
-  <label for="text">{{'Message' | translate}}:</label><br>
-  <input id="text" type="text" pInputText [(ngModel)]="input"/>
+<div class="chat-modal">
+  <div class="chat-header">
+    <div class="chat-title">{{username}}</div>
+    <button type="button" class="close-btn" (click)="close()" aria-label="Close chat">X</button>
+  </div>
+
+  <div class="chat-messages" #messagesContainer>
+    @if (loaded) {
+      @for (message of messages; track message) {
+        <div class="message-row" [class.mine]="isMine(message)">
+          <div class="message-bubble">{{message.message}}</div>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="chat-compose">
+    <input id="text" type="text" pInputText [(ngModel)]="input" (keyup.enter)="send()"/>
+    <p-button id="send" label="{{'Send' | translate}}" [disabled]="!input.trim()" (onClick)="send()"></p-button>
+  </div>
 </div>
-<p-button id="send" label="{{'Send' | translate}}" (onClick)="confirm()"></p-button>
-  <p-button label="{{'Cancel' | translate}}" (onClick)="cancel()"></p-button>

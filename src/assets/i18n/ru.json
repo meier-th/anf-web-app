@@ -64,6 +64,7 @@
 	"Friends":"Друзья",
 	"Invite to Fight":"Пригласить на бой",
 	"message":"Сообщение",
+	"Chat":"Чат",
 	"delete":"Удалить",
 	"Incoming requests":"Входящие заявки",
 	"Pending requests":"Ожидающие заявки",
@@ -95,6 +96,7 @@
 	"Decline request":"Отклонить",
 	"Send message":"Написать сообщение",
 	"Send friends request":"В друзья",
+	"Add friend":"Добавить в друзья",
 	"User":"Юзер",
 	"Admin":"Админ",
 	"Grant admin role":"Дать роль админа",
@@ -172,5 +174,6 @@
 	"LOST":"Поражение",
 	"results":"Результат",
 	"Join":"Принять",
-	"Add":"Добавить"
+	"Add":"Добавить",
+	"Unfriend":"Удалить из друзей"
 }

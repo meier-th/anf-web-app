@@ -1,40 +1,97 @@
-
-#top, #bottom {
-    display: flex;
-    width: 100%;
-    margin: 10px, 10px, 10px, 10px;
-    align-items: center;
-  justify-content: center;
-}
-#earth, #water, #fire, #air {
-    //flex: 40%;
-    width: 50%;
-    //min-width: 50%;
-    background-color: bisque;
-    padding: 5px, 5px, 5px, 5px;
-    border-radius: 15px;
-    margin: 10px, 10px, 10px, 10px;
-}
-h2, h3 {
-    height: 40px;
-}
-.head{
-    color: chartreuse;
+.spells-page {
+  color: #e2e8f0;
 }
 
-.description{
-    background-color: #ba8;
-    border-radius: 10px;
-    font-family: "Times New Roman", Times, serif;
-    font-weight: normal;
-    padding: 5px;
+.spells-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
 }
+
+.head {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 20px;
+}
+
+.points-badge {
+  color: #dbeafe;
+  background: rgba(30, 58, 138, 0.52);
+  border: 1px solid rgba(96, 165, 250, 0.5);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.points-badge span {
+  color: #86efac;
+  text-shadow: 0 0 8px rgba(134, 239, 172, 0.7);
+  font-weight: 700;
+}
+
+.spells-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.spell-card {
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 10px;
+}
+
+.spell-card h3 {
+  margin: 0 0 8px 0;
+  color: #f8fafc;
+}
+
+.description {
+  background: rgba(15, 23, 42, 0.58);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.level-row {
+  margin-top: 8px;
+  color: #bfdbfe;
+  font-size: 12px;
+}
+
+.blocked {
+  border-radius: 8px;
+  border: 1px dashed rgba(248, 113, 113, 0.5);
+  background: rgba(127, 29, 29, 0.3);
+  padding: 10px;
+}
+
 .blockLbl {
-    width: 100px;
-    height: 100px;
-    display: block;
-    background-image: url("../../assets/locked.png");
-    background-size: cover;
-    color: rgb(253, 44, 44);
-    border-radius: 10px;
+  display: block;
+  color: #fecaca;
+}
+
+:host ::ng-deep p-button.spell-action .p-button {
+  margin-top: 8px;
+  font-size: 11px;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(116, 249, 162, 0.7);
+  background: rgba(18, 102, 61, 0.9);
+  color: #f8fafc;
+}
+
+:host ::ng-deep p-button.spell-action .p-button:hover {
+  background: rgba(22, 128, 74, 0.95);
+}
+
+@media (max-width: 900px) {
+  .spells-grid {
+    grid-template-columns: 1fr;
+  }
 }

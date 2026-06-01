@@ -1,15 +1,15 @@
-import { Component, OnInit, Injector } from '@angular/core';
+import { Component, OnInit, Injector, NgZone } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import {User} from '../classes/user';
 import { FriendsPageComponent } from '../friends-page/friends-page.component';
 import {SingleMessageComponent} from '../single-message/single-message.component';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
-import { SingleMessageService } from '../services/single-message.service';
 import {Stomp} from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Userdata } from '../classes/userdata';
 import {ApiConfigService} from '../core/config/api-config.service';
+import {Message as PrivateMessage} from '../classes/message';
 
 @Component({
   selector: 'app-users-list',
@@ -26,11 +26,13 @@ export class UsersListComponent implements OnInit {
   private stompClient;
   private adminView: boolean = false;
   private dialog: DynamicDialogRef;
+  unreadByUser: {[login: string]: number} = {};
+  private activeChatLogin: string | null = null;
 
 
-  constructor(private http: HttpClient, private injector: Injector, private messageServ: SingleMessageService,
+  constructor(private http: HttpClient, private injector: Injector,
     private dialogService: DialogService, private confirmationService: ConfirmationService,
-    private apiConfig: ApiConfigService) { }
+    private apiConfig: ApiConfigService, private ngZone: NgZone) { }
 
   ngOnInit() {
         let tempUsrs: Userdata[] = [];
@@ -99,7 +101,8 @@ export class UsersListComponent implements OnInit {
                                       ud.user.offline = true;
                                     }
                                   });
-                                  this.usersList = tempUsrs; 
+                                  this.usersList = tempUsrs;
+                                  this.loadUnreadMessageCounts();
                                 });
                             });
                         });
@@ -110,100 +113,119 @@ export class UsersListComponent implements OnInit {
   }
 
   initializeWebSockets(): void {
-    let ws = new SockJS(this.apiConfig.buildUrl('/socket'));
+    const ws = new SockJS(this.apiConfig.buildUrl('/socket'));
     this.stompClient = Stomp.over(ws);
-    let that = this;
+    const that = this;
     this.stompClient.connect({}, function(frame) {
-      that.stompClient.subscribe("/online", (message) => {
-        var str = message.body; //format: {online/offline/new}:{username}
-        var i = str.indexOf(':');
-        var type = str.substring(0, i);
-        var user = str.substring(i+1, str.length);
-        if (type !== 'new')
-        that.usersList.forEach(ud => {
-          if (ud.user.login === user) {
-            if (type === 'online') {
-              ud.user.offline = false;
-              ud.user.online = true;
-            } else {
-              ud.user.offline = true;
-              ud.user.online = false;
-            }
+      that.stompClient.subscribe('/online', (message) => {
+        that.ngZone.run(() => {
+          const parsed = that.parseOnlineEvent(message.body);
+          if (!parsed) {
+            return;
           }
-        });
-        else {
-          var newUser: User;
+          const type = parsed.type;
+          const user = parsed.user;
+          if (type !== 'new') {
+            that.usersList.forEach(ud => {
+              if (ud.user.login === user) {
+                ud.user.online = type === 'online';
+                ud.user.offline = !ud.user.online;
+              }
+            });
+            return;
+          }
+
           that.http.get<User>(that.apiConfig.buildUrl('/users/' + user), {withCredentials: true})
             .subscribe(usr => {
-              newUser = usr;
-              var newUd: Userdata = new Userdata();
-          newUd.admin = false;
-          newUd.friend = false;
-          newUd.noRelations = true;
-          newUd.notAdmin = true;
-          newUd.requested = false;
-          newUd.requesting = false;
-          newUd.user = newUser;
-          that.usersList.push(newUd);
+              const newUd = new Userdata();
+              newUd.admin = false;
+              newUd.friend = false;
+              newUd.noRelations = true;
+              newUd.notAdmin = true;
+              newUd.requested = false;
+              newUd.requesting = false;
+              newUd.user = usr;
+              that.usersList.push(newUd);
             });
-          
-        }
-    });
-      that.stompClient.subscribe("/user/social", message => {
-        var str = message.body;
-        var i = str.indexOf(':');
-        var event = str.substring(0, i);
-        if (event === 'friend') {
-          var type = str.substring(i+1, i+2);
-          var username = str.substring(i+2, str.length);
-          console.log('usersList: friend '+type+' '+username+';');
-          that.usersList.forEach(ud => {
-            if (ud.user.login === username){
-              if (type === '+' || type === 'o') {
-                ud.friend = true;
-                ud.requested = false;
-                ud.requesting = false;
-              } else {
-                ud.friend = false;
-                ud.noRelations = true;
-              }
-            }
-          });
-        } else if (event = 'request') {
-          var type = str.substring(i+1, i+2);
-          var username = str.substring(i+2, str.length);
-          that.usersList.forEach(ud => {
-            if (ud.user.login === username) {
-              if (type === '+') {
-                ud.requesting = true;
-                ud.noRelations = false;
-              } else if (type === '-') {
-                ud.requesting = false;
-                ud.noRelations = true;
-              } else if (type === '/'){
-                ud.requested = false;
-                ud.noRelations = true;
-              }
-            }
-          });
-        } else if (event === 'decline'){
-          var username = str.substring(i+1, str.length);
-          that.usersList.forEach(ud => {
-            if (ud.user.login === username) {
-              ud.requested = false;
-              ud.noRelations = true;
-            }
-          });
-        } 
+        });
       });
+
+      that.stompClient.subscribe('/user/social', message => {
+        that.ngZone.run(() => {
+          const str = message.body;
+          const i = str.indexOf(':');
+          const event = str.substring(0, i);
+
+          if (event === 'friend') {
+            const type = str.substring(i + 1, i + 2);
+            const username = str.substring(i + 2, str.length);
+            console.log('usersList: friend ' + type + ' ' + username + ';');
+            that.usersList.forEach(ud => {
+              if (ud.user.login === username) {
+                if (type === '+' || type === 'o') {
+                  ud.friend = true;
+                  ud.requested = false;
+                  ud.requesting = false;
+                } else {
+                  ud.friend = false;
+                  ud.noRelations = true;
+                }
+              }
+            });
+          } else if (event === 'request') {
+            const type = str.substring(i + 1, i + 2);
+            const username = str.substring(i + 2, str.length);
+            that.usersList.forEach(ud => {
+              if (ud.user.login === username) {
+                if (type === '+') {
+                  ud.requesting = true;
+                  ud.noRelations = false;
+                } else if (type === '-') {
+                  ud.requesting = false;
+                  ud.noRelations = true;
+                } else if (type === '/') {
+                  ud.requested = false;
+                  ud.noRelations = true;
+                }
+              }
+            });
+          } else if (event === 'decline') {
+            const username = str.substring(i + 1, str.length);
+            that.usersList.forEach(ud => {
+              if (ud.user.login === username) {
+                ud.requested = false;
+                ud.noRelations = true;
+              }
+            });
+          }
+        });
+      });
+
+      that.stompClient.subscribe('/user/msg', (message) => {
+        that.ngZone.run(() => {
+          const str = message.body as string;
+          const i = str.indexOf(':');
+          if (i < 0) {
+            return;
+          }
+          const author = str.substring(0, i);
+          if (author === that.activeChatLogin) {
+            return;
+          }
+          that.loadUnreadMessageCounts();
+        });
+      });
+
       if (that.adminView) {
-        that.stompClient.subscribe("/admin/admins", message => {
-          var logn = message.body;
-          that.usersList.forEach(ud => {
-            if (ud.user.login === logn) {
-              ud.admin = true;
-              ud.notAdmin = false;
-            }
+        that.stompClient.subscribe('/admin/admins', message => {
+          that.ngZone.run(() => {
+            const logn = message.body;
+            that.usersList.forEach(ud => {
+              if (ud.user.login === logn) {
+                ud.admin = true;
+                ud.notAdmin = false;
+              }
+            });
           });
         });
       }
@@ -252,12 +274,24 @@ export class UsersListComponent implements OnInit {
   }
 
   openMessageWindow(ud: Userdata): void {
-    this.messageServ.username = ud.user.login;
-    
+    this.clearUnreadForUser(ud.user.login);
+    this.activeChatLogin = ud.user.login;
     this.dialog = this.dialogService.open(SingleMessageComponent, {
-      width: '800px', height: '400px'
+      width: '760px',
+      height: '560px',
+      closable: false,
+      data: {
+        username: ud.user.login
+      }
     });
-    this.messageServ.closingObj = this.dialog;
+    this.dialog.onClose.subscribe(() => {
+      this.activeChatLogin = null;
+      this.loadUnreadMessageCounts();
+    });
+  }
+
+  getUnreadCount(login: string): number {
+    return this.unreadByUser[login] ?? 0;
   }
 
   grantAdmin(ud: Userdata): void {
@@ -272,6 +306,38 @@ export class UsersListComponent implements OnInit {
     withCredentials: true }).subscribe( msg => {});
     ud.admin = true;
     ud.notAdmin = false;
+  }
+
+  private parseOnlineEvent(body: string): { user: string; type: string } | null {
+    const i = body.indexOf(':');
+    if (i < 0) {
+      return null;
+    }
+    const left = body.substring(0, i);
+    const right = body.substring(i + 1);
+    const knownTypes = ['online', 'offline', 'new'];
+    if (knownTypes.includes(left)) {
+      return {user: right, type: left};
+    }
+    return {user: left, type: right};
+  }
+
+  private clearUnreadForUser(login: string): void {
+    this.unreadByUser[login] = 0;
+  }
+
+  private loadUnreadMessageCounts(): void {
+    this.http.get<PrivateMessage[]>(this.apiConfig.buildUrl('/profile/messages/unread'), {withCredentials: true})
+      .subscribe(messages => {
+        this.unreadByUser = {};
+        (messages ?? []).forEach(message => {
+          const sender = message?.sender?.login;
+          if (!sender) {
+            return;
+          }
+          this.unreadByUser[sender] = (this.unreadByUser[sender] ?? 0) + 1;
+        });
+      });
   }
 
 }

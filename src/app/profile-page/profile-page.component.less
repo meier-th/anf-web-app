@@ -129,7 +129,7 @@
 }
 
 #chad {
-  height: 20%;
+  height: 40%;
 }
 
 .section#userdata {
@@ -217,7 +217,7 @@
 #userdata .stat-control {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 6px;
+  gap: 3px;
   align-items: center;
 }
 
@@ -246,9 +246,18 @@
 }
 
 #userdata .upgrade-points {
-  margin-top: 8px;
+  margin: 0 0 8px 0;
   color: #e2e8f0;
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#userdata .upgrade-points-count {
+  color: #74f9a2;
+  text-shadow: 0 0 6px rgba(116, 249, 162, 0.75);
+  font-weight: 700;
 }
 
 #userdata .animal-race-row {
@@ -269,17 +278,55 @@
   margin: 0;
 }
 
-#userdata .stat-tile button {
-  border-radius: 6px;
-  border: 1px solid #60a5fa;
-  background: #1e3a8a;
-  color: #f8fafc;
-  width: 24px;
-  height: 24px;
+#userdata .stat-control .upgrade-button {
+  border: none;
+  background: transparent;
+  color: #74f9a2;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-shadow: 0 0 8px rgba(116, 249, 162, 0.75);
+  transition: transform 0.15s ease, color 0.15s ease, text-shadow 0.15s ease;
+  padding: 0;
+  animation: upgrade-pulse 1.6s ease-in-out infinite;
 }
 
-#userdata .stat-tile button:hover {
-  background: #1d4ed8;
+#userdata .stat-control .upgrade-button:hover {
+  color: #b4ffd0;
+  text-shadow: 0 0 12px rgba(116, 249, 162, 0.95);
+  transform: translateY(-1px);
+}
+
+#userdata .stat-control .upgrade-button:focus-visible {
+  outline: 1px solid rgba(116, 249, 162, 0.8);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+#userdata .stat-control .upgrade-icon {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+  filter: drop-shadow(0 0 3px rgba(116, 249, 162, 0.8));
+  pointer-events: none;
+}
+
+@keyframes upgrade-pulse {
+  0% {
+    transform: scale(1);
+    text-shadow: 0 0 8px rgba(116, 249, 162, 0.7);
+  }
+  50% {
+    transform: scale(1.12);
+    text-shadow: 0 0 14px rgba(116, 249, 162, 1);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: 0 0 8px rgba(116, 249, 162, 0.7);
+  }
 }
 
 #userdata .vertical {

@@ -48,14 +48,19 @@
                   }
                 </td>
                 <td class="actions">
+                  <div class="chat-action">
+                    <p-button
+                      class="action-btn user-action-button neutral"
+                      (click)="showMessageInput(friend)"
+                      [label]="'Chat' | translate"></p-button>
+                    @if (getUnreadCount(friend.login) > 0) {
+                      <span class="unread-badge">{{getUnreadCount(friend.login)}}</span>
+                    }
+                  </div>
                   <p-button
-                    class="action-btn"
-                    (click)="showMessageInput(friend)"
-                    [label]="'message' | translate"></p-button>
-                  <p-button
-                    class="action-btn"
+                    class="action-btn user-action-button removeRequest"
                     (click)="deleteFriend(friend)"
-                    [label]="'delete' | translate"></p-button>
+                    [label]="'Unfriend' | translate"></p-button>
                 </td>
               </tr>
             }
@@ -83,11 +88,11 @@
                 <td>{{inReq.login}}</td>
                 <td class="actions">
                   <p-button
-                    class="action-btn"
+                    class="action-btn user-action-button acceptRequest"
                     (click)="addFriend(inReq)"
                     [label]="'Accept' | translate"></p-button>
                   <p-button
-                    class="action-btn"
+                    class="action-btn user-action-button removeRequest"
                     (click)="declineReq(inReq)"
                     [label]="'Decline' | translate"></p-button>
                 </td>
@@ -117,7 +122,7 @@
                 <td>{{outReq.login}}</td>
                 <td class="actions">
                   <p-button
-                    class="action-btn"
+                    class="action-btn user-action-button removeRequest"
                     (click)="deleteRequest(outReq)"
                     [label]="'Delete request' | translate"></p-button>
                 </td>

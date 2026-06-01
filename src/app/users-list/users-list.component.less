@@ -5,30 +5,17 @@
   display: block;
   overflow-y: scroll;
   color: white;
-  .usersList {
-    max-height: 310px;
-    display: block;
-  }
-  label {
-    margin: 3px;
-  }
-  p-button {
-    margin: 3px;
-  }
-  #search {
-    margin: 3px;
-    box-shadow: 0 0 2px lightblue;
-  }
-  #search:active {
-    box-shadow: 0 0 3px blue;
-  }
   ul {
     padding: 0;
+    margin: 0;
+    list-style: none;
   }
 }
 
 h2 {
-  color: white;
+  color: #f8fafc;
+  margin: 0 0 6px 0;
+  font-size: 22px;
 }
 
 #search {
@@ -49,5 +36,146 @@ h2 {
 #search:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 0.22rem rgba(37, 99, 235, 0.24);
+}
+
+.user-item {
+  margin: 0 0 8px 0;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.user-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.user-name-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.username {
+  color: #f8fafc;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.status {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: #64748b;
+}
+
+.status.online {
+  color: #34d399;
+  text-shadow: 0 0 6px rgba(52, 211, 153, 0.7);
+}
+
+.status.offline {
+  color: #94a3b8;
+}
+
+.friend,
+.requested,
+.requesting {
+  display: inline-block;
+  margin: 0 0 5px 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.friend {
+  color: #86efac;
+  background: rgba(20, 83, 45, 0.38);
+}
+
+.inline-friend {
+  margin: 0;
+}
+
+.requested,
+.requesting {
+  color: #bfdbfe;
+  background: rgba(30, 64, 175, 0.35);
+}
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.chat-action {
+  position: relative;
+  display: inline-flex;
+}
+
+.unread-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  padding: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.65);
+}
+
+.adminPanel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+:host ::ng-deep p-button.user-action-button .p-button {
+  font-size: 11px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(30, 41, 59, 0.9);
+  color: #f8fafc;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+:host ::ng-deep p-button.user-action-button .p-button:hover {
+  background: rgba(51, 65, 85, 0.95);
+  border-color: #60a5fa;
+  transform: translateY(-1px);
+}
+
+:host ::ng-deep p-button.user-action-button.acceptRequest .p-button {
+  background: rgba(18, 102, 61, 0.9);
+  border-color: rgba(74, 222, 128, 0.7);
+}
+
+:host ::ng-deep p-button.user-action-button.acceptRequest .p-button:hover {
+  background: rgba(22, 128, 74, 0.95);
+}
+
+:host ::ng-deep p-button.user-action-button.removeRequest .p-button {
+  background: rgba(127, 29, 29, 0.86);
+  border-color: rgba(252, 165, 165, 0.65);
+}
+
+:host ::ng-deep p-button.user-action-button.removeRequest .p-button:hover {
+  background: rgba(153, 27, 27, 0.94);
 }
 

@@ -1,13 +1,13 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {User} from '../classes/user';
 import {HttpClient, HttpParams, HttpHeaderResponse, HttpHeaders} from '@angular/common/http';
 import {Stomp} from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import {SingleMessageComponent} from '../single-message/single-message.component';
-import {SingleMessageService} from '../services/single-message.service';
 import {ConfirmationService} from 'primeng/api';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {ApiConfigService} from '../core/config/api-config.service';
+import {Message as PrivateMessage} from '../classes/message';
 
 @Component({
   selector: 'app-friends-page',
@@ -22,12 +22,14 @@ export class FriendsPageComponent implements OnInit, OnDestroy {
   friends: User[] = [];
   inRequested: User[] = [];
   outRequested: User[] = [];
+  unreadByUser: {[login: string]: number} = {};
   private stompClient: any;
   private dialog: DynamicDialogRef;
+  private activeChatLogin: string | null = null;
 
   constructor(private http: HttpClient, private dialogService: DialogService,
-              private confirmationService: ConfirmationService, private msgServ: SingleMessageService,
-              private apiConfig: ApiConfigService) {
+              private confirmationService: ConfirmationService,
+              private apiConfig: ApiConfigService, private ngZone: NgZone) {
   }
 
   ngOnInit() {
@@ -39,6 +41,7 @@ export class FriendsPageComponent implements OnInit, OnDestroy {
       .subscribe(data => {
         this.friends = data;
         this.checkOnline();
+        this.loadUnreadMessageCounts();
       });
 
     this.initializeWebSockets();
@@ -70,109 +73,110 @@ export class FriendsPageComponent implements OnInit, OnDestroy {
     const that = this;
     this.stompClient.connect({}, function (frame) {
       that.stompClient.subscribe('/online', (message) => {
-        const str = message.body; // format: {username}:{online/offline}
-        const i = str.indexOf(':');
-        const user = str.substring(0, i);
-        const type = str.substring(i + 1, str.length);
-        if (that.friends.map(friend => friend.login).includes(user)) {
-          if (type === 'online') {
+        that.ngZone.run(() => {
+          const parsed = that.parseOnlineEvent(message.body);
+          if (!parsed || parsed.type === 'new') {
+            return;
+          }
+          const user = parsed.user;
+          const type = parsed.type;
+          if (that.friends.map(friend => friend.login).includes(user)) {
             that.friends.forEach(friend => {
               if (friend.login === user) {
-                friend.online = true;
-                friend.offline = false;
-              }
-            });
-          } else {
-            that.friends.forEach(friend => {
-              if (friend.login === user) {
-                friend.offline = true;
-                friend.online = false;
+                friend.online = type === 'online';
+                friend.offline = !friend.online;
               }
             });
           }
-        }
+        });
       });
       that.stompClient.subscribe('/user/social', message => {
-        const str = message.body;
-        const i = str.indexOf(':');
-        const event = str.substring(0, i);
-        // console.log("event: "+event);
-        if (event === 'friend') {
-          const type = str.substring(i + 1, i + 2);
-          // console.log("type: "+type);
-          if (type === '+' || type === 'o') {
-            const username = str.substring(i + 2, str.length);
-            let user: User;
-            // console.log("username: "+username);
-            const url = that.apiConfig.buildUrl('/users/' + username);
-            that.http.get<User>(url, {withCredentials: true})
-              .subscribe(data => {
-                user = data;
-                user.online = false;
-                user.offline = true;
-                let ready = [];
-                that.http.get<string[]>(that.apiConfig.buildUrl('/ready'), {withCredentials: true})
-                  .subscribe(data => {
-                    ready = data;
-                    if (ready.includes(user.login)) {
-                      user.online = true;
-                      user.offline = false;
-                    }
-                  });
-                that.addUniqueByLogin(that.friends, user);
-              });
-            if (type === '+') {
-              that.removeByLogin(that.outRequested, username);
-            } else {
-              that.removeByLogin(that.inRequested, username);
+        that.ngZone.run(() => {
+          const str = message.body;
+          const i = str.indexOf(':');
+          const event = str.substring(0, i);
+          // console.log("event: "+event);
+          if (event === 'friend') {
+            const type = str.substring(i + 1, i + 2);
+            // console.log("type: "+type);
+            if (type === '+' || type === 'o') {
+              const username = str.substring(i + 2, str.length);
+              let user: User;
+              // console.log("username: "+username);
+              const url = that.apiConfig.buildUrl('/users/' + username);
+              that.http.get<User>(url, {withCredentials: true})
+                .subscribe(data => {
+                  user = data;
+                  that.addUniqueByLogin(that.friends, user);
+                  that.refreshFriendOnlineStatus(user.login);
+                  that.scheduleFriendsOnlineResync();
+                });
+              if (type === '+') {
+                that.removeByLogin(that.outRequested, username);
+              } else {
+                that.removeByLogin(that.inRequested, username);
+              }
+            } else if (type === '-') {
+              const username = str.substring(i + 2, str.length);
+              that.removeByLogin(that.friends, username);
             }
-          } else if (type === '-') {
+          } else if (event === 'request') {
             const username = str.substring(i + 2, str.length);
-            that.removeByLogin(that.friends, username);
-          }
-        } else if (event === 'request') {
-          const type = str.substring(i + 1, i + 2);
-          // console.log("type: "+type);
-          if (type === '+' || type === 'o') {
-            const username = str.substring(i + 2, str.length);
-            let user: User;
-            // console.log("username: "+username);
-            const url = that.apiConfig.buildUrl('/users/' + username);
-            that.http.get<User>(url, {withCredentials: true})
-              .subscribe(data => {
-                user = data;
-                if (type === '+') {
-                  that.addUniqueByLogin(that.inRequested, user);
-                } else {
-                  that.addUniqueByLogin(that.outRequested, user);
-                }
-              });
+            const type = str.substring(i + 1, i + 2);
+            // console.log("type: "+type);
+            if (type === '+' || type === 'o') {
+              const username = str.substring(i + 2, str.length);
+              let user: User;
+              // console.log("username: "+username);
+              const url = that.apiConfig.buildUrl('/users/' + username);
+              that.http.get<User>(url, {withCredentials: true})
+                .subscribe(data => {
+                  user = data;
+                  if (type === '+') {
+                    that.addUniqueByLogin(that.inRequested, user);
+                  } else {
+                    that.addUniqueByLogin(that.outRequested, user);
+                  }
+                });
+            } else {
+              let user: User;
+              // console.log("username: "+username);
+              const url = that.apiConfig.buildUrl('/users/' + username);
+              that.http.get<User>(url, {withCredentials: true})
+                .subscribe(data => {
+                  user = data;
+                  if (type === '-') {
+                    that.removeByLogin(that.inRequested, user.login);
+                  } else {
+                    that.removeByLogin(that.outRequested, user.login);
+                  }
+                });
+            }
           } else {
-            const username = str.substring(i + 2, str.length);
-            let user: User;
-            // console.log("username: "+username);
-            const url = that.apiConfig.buildUrl('/users/' + username);
-            that.http.get<User>(url, {withCredentials: true})
-              .subscribe(data => {
-                user = data;
-                if (type === '-') {
-                  that.removeByLogin(that.inRequested, user.login);
-                } else {
-                  that.removeByLogin(that.outRequested, user.login);
-                }
-              });
+            const username = str.substring(i + 1, str.length);
+            that.removeByLogin(that.outRequested, username);
           }
-        } else {
-          const username = str.substring(i + 1, str.length);
-          that.removeByLogin(that.outRequested, username);
-        }
+        });
+      });
+
+      that.stompClient.subscribe('/user/msg', (message) => {
+        that.ngZone.run(() => {
+          const str = message.body as string;
+          const i = str.indexOf(':');
+          if (i < 0) {
+            return;
+          }
+          const author = str.substring(0, i);
+          if (author === that.activeChatLogin) {
+            return;
+          }
+          that.loadUnreadMessageCounts();
+        });
       });
     });
   }
 
   addFriend(req: User): void {
-    req.offline = true;
-    req.online = false;
     this.http.post(this.apiConfig.buildUrl('/profile/friends'),
       new HttpParams().set('login', req.login),
       {
@@ -184,15 +188,9 @@ export class FriendsPageComponent implements OnInit, OnDestroy {
         withCredentials: true
       }).subscribe(msg => {
     });
-    this.http.get<string[]>(this.apiConfig.buildUrl('/ready'), {withCredentials: true})
-      .subscribe(data => {
-        const ready: string[] = data;
-        if (ready.includes(req.login)) {
-          req.offline = false;
-          req.online = true;
-        }
-      });
     this.addUniqueByLogin(this.friends, req);
+    this.refreshFriendOnlineStatus(req.login);
+    this.scheduleFriendsOnlineResync();
     this.removeByLogin(this.inRequested, req.login);
   }
 
@@ -254,11 +252,24 @@ export class FriendsPageComponent implements OnInit, OnDestroy {
   }
 
   showMessageInput(user: User): void {
-    this.msgServ.username = user.login;
+    this.clearUnreadForUser(user.login);
+    this.activeChatLogin = user.login;
     this.dialog = this.dialogService.open(SingleMessageComponent, {
-      width: '800px', height: '400px'
+      width: '760px',
+      height: '560px',
+      closable: false,
+      data: {
+        username: user.login
+      }
     });
-    this.msgServ.closingObj = this.dialog;
+    this.dialog.onClose.subscribe(() => {
+      this.activeChatLogin = null;
+      this.loadUnreadMessageCounts();
+    });
+  }
+
+  getUnreadCount(login: string): number {
+    return this.unreadByUser[login] ?? 0;
   }
 
   private removeByLogin(users: User[], login: string): void {
@@ -272,6 +283,55 @@ export class FriendsPageComponent implements OnInit, OnDestroy {
     if (!users.some(existingUser => existingUser.login === user.login)) {
       users.push(user);
     }
+  }
+
+  private refreshFriendOnlineStatus(login: string): void {
+    this.http.get<string[]>(this.apiConfig.buildUrl('/ready'), {withCredentials: true})
+      .subscribe(ready => {
+        const friend = this.friends.find(existing => existing.login === login);
+        if (!friend) {
+          return;
+        }
+        friend.online = ready.includes(login);
+        friend.offline = !friend.online;
+      });
+  }
+
+  private scheduleFriendsOnlineResync(): void {
+    setTimeout(() => this.checkOnline(), 350);
+    setTimeout(() => this.checkOnline(), 1400);
+  }
+
+  private parseOnlineEvent(body: string): { user: string; type: string } | null {
+    const i = body.indexOf(':');
+    if (i < 0) {
+      return null;
+    }
+    const left = body.substring(0, i);
+    const right = body.substring(i + 1);
+    const knownTypes = ['online', 'offline', 'new'];
+    if (knownTypes.includes(left)) {
+      return {user: right, type: left};
+    }
+    return {user: left, type: right};
+  }
+
+  private clearUnreadForUser(login: string): void {
+    this.unreadByUser[login] = 0;
+  }
+
+  private loadUnreadMessageCounts(): void {
+    this.http.get<PrivateMessage[]>(this.apiConfig.buildUrl('/profile/messages/unread'), {withCredentials: true})
+      .subscribe(messages => {
+        this.unreadByUser = {};
+        (messages ?? []).forEach(message => {
+          const sender = message?.sender?.login;
+          if (!sender) {
+            return;
+          }
+          this.unreadByUser[sender] = (this.unreadByUser[sender] ?? 0) + 1;
+        });
+      });
   }
 
 }

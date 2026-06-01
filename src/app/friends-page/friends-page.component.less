@@ -82,6 +82,29 @@
     white-space: nowrap;
   }
 
+  .chat-action {
+    position: relative;
+    display: inline-flex;
+    margin-right: 8px;
+  }
+
+  .unread-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    padding: 0 4px;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.65);
+  }
+
   .action-btn {
     margin-right: 8px;
   }
@@ -94,4 +117,38 @@
     display: inline-block;
     margin: 4px 0;
   }
+}
+
+:host ::ng-deep p-button.user-action-button .p-button {
+  font-size: 11px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(30, 41, 59, 0.9);
+  color: #f8fafc;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+:host ::ng-deep p-button.user-action-button .p-button:hover {
+  background: rgba(51, 65, 85, 0.95);
+  border-color: #60a5fa;
+  transform: translateY(-1px);
+}
+
+:host ::ng-deep p-button.user-action-button.acceptRequest .p-button {
+  background: rgba(18, 102, 61, 0.9);
+  border-color: rgba(74, 222, 128, 0.7);
+}
+
+:host ::ng-deep p-button.user-action-button.acceptRequest .p-button:hover {
+  background: rgba(22, 128, 74, 0.95);
+}
+
+:host ::ng-deep p-button.user-action-button.removeRequest .p-button {
+  background: rgba(127, 29, 29, 0.86);
+  border-color: rgba(252, 165, 165, 0.65);
+}
+
+:host ::ng-deep p-button.user-action-button.removeRequest .p-button:hover {
+  background: rgba(153, 27, 27, 0.94);
 }

@@ -15,10 +15,10 @@ const routes: Routes = [{path: 'start', component: StartPageComponent},
   {path: 'info', component: InfoPageComponent},
   {path: 'main', component: ProfilePageComponent},
   {path: 'profile', redirectTo: 'main', pathMatch: 'full'},
-  {path: 'messages', component: MessagesComponent},
+  {path: 'messages', redirectTo: 'main', pathMatch: 'full'},
   {path: 'friends', component: FriendsPageComponent},
   {path: 'dialogue/:login', component: DialogueComponent},
-  {path: 'history', component: HistoryComponent},
+  {path: 'history', redirectTo: 'main', pathMatch: 'full'},
   {path: 'spells', component: SpellsComponent},
   {path: 'fight/:type/:id', component: FightComponent}];
 

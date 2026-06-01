@@ -15,7 +15,7 @@
   </div>
   <div id="write">
     <input type="text" pInputText id="text" [(ngModel)]="input" (keyup.enter)="send()">
-    <p-button id="send" label="{{'Send' | translate}}" (onClick)="send()"></p-button>
+    <p-button id="send" label="{{'Send' | translate}}" [disabled]="!input?.trim() || !user" (onClick)="send()"></p-button>
     <br>
       @if (admin) {
         <label id="lbl">{{asSystem? ('Send as system' | translate) : ('Send as user' | translate) }}</label>

@@ -1,32 +1,39 @@
-<div id="fullPage">
-  <table>
-    <tr>
-      <th>{{'Date' | translate }}</th>
-      <th>{{'Type' | translate }}</th>
-      <th>{{'Result' | translate }}</th>
-      <th>{{'XPchange' | translate }}</th>
-      <th>{{'RatingChange' | translate }}</th>
-      <th>{{'Rival' | translate }}</th>
-    </tr>
-    @for (fight of fights; track fight) {
+<div class="history-modal">
+  <div class="history-header">
+    <h2>{{'History' | translate }}</h2>
+    <button type="button" class="close-btn" (click)="close()" aria-label="Close history">X</button>
+  </div>
+
+  <div class="history-table-wrap">
+    <table>
       <tr>
-        <td>{{fight.date | date:'short'}}</td>
-        <td>{{fight.type}}</td>
-        <td><div [ngClass]="fight.result === 'Win' ? 'won': 'lost'">
-        {{fight.result | translate}} </div></td>
-        <td>{{fight.xpCh}}</td>
-        <td>@if (fight.ratingCh !==0) {
-          <div [ngClass]="fight.ratingCh > 0 ? 'won': 'lost'">
-          {{fight.ratingCh}}</div>
-        }
-        @if (fight.ratingCh === 0) {
-          <div>
-            {{fight.ratingCh}}
-          </div>
-        }
-      </td>
-      <td>{{fight.rival}}</td>
-    </tr>
-  }
-</table>
+        <th>{{'Date' | translate }}</th>
+        <th>{{'Type' | translate }}</th>
+        <th>{{'Result' | translate }}</th>
+        <th>{{'XPchange' | translate }}</th>
+        <th>{{'RatingChange' | translate }}</th>
+        <th>{{'Rival' | translate }}</th>
+      </tr>
+      @for (fight of fights; track fight) {
+        <tr>
+          <td>{{fight.date | date:'short'}}</td>
+          <td>{{fight.type}}</td>
+          <td><div [ngClass]="fight.result === 'Win' ? 'won': 'lost'">
+            {{fight.result | translate}} </div></td>
+          <td>{{fight.xpCh}}</td>
+          <td>@if (fight.ratingCh !==0) {
+            <div [ngClass]="fight.ratingCh > 0 ? 'won': 'lost'">
+              {{fight.ratingCh}}</div>
+            }
+            @if (fight.ratingCh === 0) {
+              <div>
+                {{fight.ratingCh}}
+              </div>
+            }
+          </td>
+          <td>{{fight.rival}}</td>
+        </tr>
+      }
+    </table>
+  </div>
 </div>

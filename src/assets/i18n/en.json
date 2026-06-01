@@ -64,6 +64,7 @@
 	"Friends":"Friends",
 	"Invite to Fight":"Invite to Fight",
 	"message":"Message",
+	"Chat":"Chat",
 	"delete":"Delete",
 	"Incoming requests":"Incoming requests",
 	"Pending requests":"Pending requests",
@@ -95,6 +96,7 @@
 	"Decline request":"Decline request",
 	"Send message":"Send message",
 	"Send friends request":"To friends",
+	"Add friend":"Add friend",
 	"User":"User",
 	"Admin":"Admin",
 	"Grant admin role":"Grant admin role",
@@ -172,5 +174,6 @@
 		"LOST":"Loss",
 		"results":"Results",
 		"Join":"Join",
-		"Add":"Add"
+		"Add":"Add",
+		"Unfriend":"Unfriend"
 	}

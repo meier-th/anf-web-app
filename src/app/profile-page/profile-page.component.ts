@@ -7,7 +7,6 @@ import {ConfirmationService} from 'primeng/api';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {QueueComponent} from '../queue/queue.component';
 import {AreaService} from '../services/area/area.service';
-import {Observable} from 'rxjs';
 import {CookieService} from 'ngx-cookie-service';
 import {Stomp} from '@stomp/stompjs';
 import {AnimalRaceChoiceComponent} from '../animal-race-choice/animal-race-choice.component';
@@ -78,6 +77,8 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   private stompClient;
   private statsMissingFromProfile = false;
   private hoveredGround: HTMLElement | null = null;
+  private readyTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private readyHeartbeatId: ReturnType<typeof setInterval> | null = null;
 
   constructor(private http: HttpClient, private injector: Injector,
               private dialogService: DialogService, private areaService: AreaService,
@@ -101,6 +102,11 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
       this.parent.router.navigateByUrl('start');
     });
     this.ready = this.cookieService.get('ready') === 'true';
+    if (this.ready) {
+      this.sendReadyState(true);
+      this.startReadyHeartbeat();
+      this.scheduleReadyAutoOff();
+    }
     this.subscribeForWebsockets();
   }
 
@@ -122,20 +128,15 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   public changeReadyState() {
-    let request: Observable<Object>;
+    this.sendReadyState(this.ready);
     if (this.ready) {
-      this.ready = true;
-      setTimeout(() => {
-        this.ready = false;
-      }, 300000);
-      request = this.http.get(this.apiConfig.buildUrl('/profile/online'), {withCredentials: true});
+      this.startReadyHeartbeat();
+      this.scheduleReadyAutoOff();
     } else {
-      this.ready = false;
-      request = this.http.get(this.apiConfig.buildUrl('/profile/offline'), {withCredentials: true});
+      this.stopReadyHeartbeat();
+      this.clearReadyAutoOff();
     }
-    request.subscribe(() => {
-      this.cookieService.set('ready', this.ready.toString(), new Date(Date.now() + 300000));
-    });
+    this.cookieService.set('ready', this.ready.toString(), new Date(Date.now() + 300000));
   }
 
   public setReadyState(isReady: boolean): void {
@@ -362,8 +363,52 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   ngOnDestroy() {
+    this.stopReadyHeartbeat();
+    this.clearReadyAutoOff();
     this.setHoveredGround(null);
     document.documentElement.style.overflowY = 'scroll';
+  }
+
+  private sendReadyState(isReady: boolean): void {
+    const endpoint = isReady ? '/profile/online' : '/profile/offline';
+    this.http.get(this.apiConfig.buildUrl(endpoint), {withCredentials: true}).subscribe();
+  }
+
+  private startReadyHeartbeat(): void {
+    if (this.readyHeartbeatId) {
+      return;
+    }
+    this.readyHeartbeatId = setInterval(() => {
+      if (this.ready) {
+        this.sendReadyState(true);
+      }
+    }, 120000);
+  }
+
+  private stopReadyHeartbeat(): void {
+    if (!this.readyHeartbeatId) {
+      return;
+    }
+    clearInterval(this.readyHeartbeatId);
+    this.readyHeartbeatId = null;
+  }
+
+  private scheduleReadyAutoOff(): void {
+    this.clearReadyAutoOff();
+    this.readyTimeoutId = setTimeout(() => {
+      if (!this.ready) {
+        return;
+      }
+      this.setReadyState(false);
+    }, 300000);
+  }
+
+  private clearReadyAutoOff(): void {
+    if (!this.readyTimeoutId) {
+      return;
+    }
+    clearTimeout(this.readyTimeoutId);
+    this.readyTimeoutId = null;
   }
 
   private setHoveredGround(ground: HTMLElement | null) {

@@ -43,4 +43,12 @@ export class AuthApiService {
   logout(): Observable<string> {
     return this.http.get(this.apiConfig.buildUrl('/logout'), {responseType: 'text'});
   }
+
+  setOnline(): Observable<string> {
+    return this.http.get(this.apiConfig.buildUrl('/profile/online'), {responseType: 'text', withCredentials: true});
+  }
+
+  setOffline(): Observable<string> {
+    return this.http.get(this.apiConfig.buildUrl('/profile/offline'), {responseType: 'text', withCredentials: true});
+  }
 }

@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Optional } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { User } from '../classes/user';
 import { HistoryFight } from '../classes/history-fight';
 import { PVPFight } from '../classes/pvpfight';
+import {ApiConfigService} from '../core/config/api-config.service';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-history',
@@ -12,15 +14,17 @@ import { PVPFight } from '../classes/pvpfight';
 })
 export class HistoryComponent implements OnInit {
 
-  user: User;
+  user: User | null = null;
+  loaded = false;
   fights: HistoryFight[] = [];
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private apiConfig: ApiConfigService,
+              @Optional() public dialogRef: DynamicDialogRef | null) { }
 
   ngOnInit() {
-    this.http.get<User>('http://localhost:8080/profile', {withCredentials: true})
+    this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true})
       .subscribe(data => {
         this.user = data;
-        this.user.character.fights.forEach(fight => {
+        this.user?.character?.fights?.forEach(fight => {
           var histrecord: HistoryFight = new HistoryFight();
           histrecord.ratingCh = 0;
           histrecord.type = 'PVE';
@@ -33,7 +37,7 @@ export class HistoryComponent implements OnInit {
           this.fights.push(histrecord);
         });
         var pvps: PVPFight[] = [];
-      this.http.get<PVPFight[]>('http://localhost:8080/profile/pvphistory', {withCredentials: true})
+      this.http.get<PVPFight[]>(this.apiConfig.buildUrl('/profile/pvphistory'), {withCredentials: true})
         .subscribe(data => {
           pvps = data;
           pvps.forEach(fight => {
@@ -46,15 +50,23 @@ export class HistoryComponent implements OnInit {
             histrecord.xpCh = 0;
             this.fights.push(histrecord);
           });
-        });
-        this.fights.sort((fight1, fight2) => {
-          if (fight1.date > fight2.date)
-            return -1;
-          else
-           return 1;
+          this.sortFights();
+          this.loaded = true;
         });
       });
       
+  }
+
+  close(): void {
+    this.dialogRef?.close();
+  }
+
+  private sortFights(): void {
+    this.fights.sort((fight1, fight2) => {
+      const t1 = fight1?.date ? new Date(fight1.date).getTime() : 0;
+      const t2 = fight2?.date ? new Date(fight2.date).getTime() : 0;
+      return t2 - t1;
+    });
   }
 
 }
