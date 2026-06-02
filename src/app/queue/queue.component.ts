@@ -1,4 +1,4 @@
-import {Component, Injector, OnDestroy, OnInit} from '@angular/core';
+import {Component, Injector, OnDestroy, OnInit, Optional} from '@angular/core';
 import {AreaService} from '../services/area/area.service';
 import {HttpClient, HttpParams, HttpSentEvent} from '@angular/common/http';
 import {CookieService} from 'ngx-cookie-service';
@@ -10,6 +10,7 @@ import {MainComponent} from '../main/main.component';
 import {CompatClient, Stomp} from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import {ProfilePageComponent} from '../profile-page/profile-page.component';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-queue',
@@ -31,7 +32,8 @@ export class QueueComponent implements OnInit, OnDestroy {
   started = false;
   constructor(private areaService: AreaService, private http: HttpClient,
               private cookieService: CookieService, private fightService: FightService,
-              private injector: Injector) {
+              private injector: Injector,
+              @Optional() private dialogRef: DynamicDialogRef | null) {
   }
 
   ngOnInit() {
@@ -77,7 +79,7 @@ export class QueueComponent implements OnInit, OnDestroy {
         this.started = true;
         console.log(data);
         this.parent.router.navigateByUrl('fight/' + this.type.toLowerCase() + '/' + data.id);
-        this.parent.dialog.close();
+        this.dialogRef?.close();
       });
 
     } else {
@@ -91,9 +93,13 @@ export class QueueComponent implements OnInit, OnDestroy {
         this.started = true;
         console.log(data);
         this.parent.router.navigateByUrl('/fight/pve/' + data.id);
-        this.parent.dialog.close();
+        this.dialogRef?.close();
       });
     }
+  }
+
+  closeLobby(): void {
+    this.dialogRef?.close();
   }
 
   send(type: string, username: string, id: number): void {

@@ -16,12 +16,11 @@
   <div id="write">
     <input type="text" pInputText id="text" [(ngModel)]="input" (keyup.enter)="send()">
     <p-button id="send" label="{{'Send' | translate}}" [disabled]="!input?.trim() || !user" (onClick)="send()"></p-button>
-    <br>
-      @if (admin) {
-        <label id="lbl">{{asSystem? ('Send as system' | translate) : ('Send as user' | translate) }}</label>
-      }
-      @if (admin) {
-        <input type="checkbox" [(ngModel)]="asSystem">
-      }
+  </div>
+  @if (admin) {
+    <div id="admin-toggle">
+      <label id="lbl">{{asSystem? ('Send as system' | translate) : ('Send as user' | translate) }}</label>
+      <input type="checkbox" [(ngModel)]="asSystem">
     </div>
+  }
   </div>

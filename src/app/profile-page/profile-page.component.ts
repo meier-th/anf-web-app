@@ -16,6 +16,8 @@ import {ApiConfigService} from '../core/config/api-config.service';
 import {Stats} from '../classes/stats';
 import {Character} from '../classes/character';
 import {Appearance} from '../classes/appearance';
+import {HistoryComponent} from '../history/history.component';
+import {SpellsComponent} from '../spells/spells.component';
 
 @Component({
   selector: 'app-profile-page',
@@ -326,6 +328,22 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
     this.dialog = this.dialogService.open(AnimalRaceChoiceComponent, {width: '800px', height: '600px'});
   }
 
+  openFightLog(): void {
+    this.dialog = this.dialogService.open(HistoryComponent, {
+      width: '980px',
+      height: '640px',
+      closable: false
+    });
+  }
+
+  openSpellbook(): void {
+    this.dialog = this.dialogService.open(SpellsComponent, {
+      width: '980px',
+      height: '640px',
+      closable: false
+    });
+  }
+
   ngAfterViewChecked() {
     if (!this.checked && this.loaded) {
       this.checked = true;
@@ -340,7 +358,7 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
       for (let i = 0; i < array.length; i++) {
         (<HTMLElement>array[i]).onclick = function () {
           console.log('kek');
-          that.parent.dialog = dialogService.open(QueueComponent, {width: '440px', height: '200px'});
+          that.parent.dialog = dialogService.open(QueueComponent, {width: '980px', height: '640px', closable: false});
           areaService.selectedArea = (<HTMLElement>this).id;
           areaService.pvp = (<HTMLElement>array[i]).classList.contains('ground');
         };

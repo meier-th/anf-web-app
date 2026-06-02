@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Optional } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import {User} from '../classes/user';
 import { Spell } from '../classes/spell';
 import {ApiConfigService} from '../core/config/api-config.service';
 import {Router} from '@angular/router';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-spells',
@@ -25,7 +26,8 @@ export class SpellsComponent implements OnInit {
   air: Spell = new Spell(25, 'Air Strike', 150, 70, 20, 10);
   freePoints = 0;
 
-  constructor(private http: HttpClient, private apiConfig: ApiConfigService, private router: Router) { }
+  constructor(private http: HttpClient, private apiConfig: ApiConfigService, private router: Router,
+              @Optional() public dialogRef: DynamicDialogRef | null) { }
 
   ngOnInit() {
     this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true})
@@ -77,6 +79,10 @@ export class SpellsComponent implements OnInit {
   private getHandlingLevel(spellName: string): number {
     const spellHandling = this.user?.character?.spellsKnown?.find(sh => sh.spellUse?.name === spellName);
     return spellHandling?.spellLevel ?? 0;
+  }
+
+  close(): void {
+    this.dialogRef?.close();
   }
 
 }

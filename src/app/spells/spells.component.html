@@ -1,85 +1,87 @@
 @if (loaded && user) {
-  <div class="spells-page">
+  <div class="spells-modal">
     <div class="spells-header">
-      <h2 class="head">{{'Spells' | translate}}</h2>
+      <h2>{{'Spells' | translate}}</h2>
+      <button type="button" class="close-btn" (click)="close()" aria-label="Close spellbook">X</button>
+    </div>
+    <div class="spells-content">
       <div class="points-badge">
         {{'Upgrade points' | translate}}: <span>{{freePoints}}</span>
       </div>
-    </div>
+      <div class="spells-grid">
+        <div class="spell-card">
+          <h3>Earth Strike</h3>
+          <div class="description">
+            {{'earth' | translate}}
+            <div class="level-row">{{'Your spell level' | translate}}: {{earthHandling}}</div>
+            @if (freePoints > 0) {
+              <p-button
+                class="spell-action"
+                [label]="earthHandling === 0 ? ('Learn spell' | translate) : ('Upgrade spell' | translate)"
+                (onClick)="learnOrUpgrade('Earth Strike')"></p-button>
+            }
+          </div>
+        </div>
 
-    <div class="spells-grid">
-      <div class="spell-card">
-        <h3>Earth Strike</h3>
-        <div class="description">
-          {{'earth' | translate}}
-          <div class="level-row">{{'Your spell level' | translate}}: {{earthHandling}}</div>
-          @if (freePoints > 0) {
-            <p-button
-              class="spell-action"
-              [label]="earthHandling === 0 ? ('Learn spell' | translate) : ('Upgrade spell' | translate)"
-              (onClick)="learnOrUpgrade('Earth Strike')"></p-button>
+        <div class="spell-card">
+          <h3>Water Strike</h3>
+          @if (userLevel >= 5) {
+            <div class="description">
+              {{'water' | translate}}
+              <div class="level-row">{{'Your spell level' | translate}}: {{waterHandling}}</div>
+              @if (freePoints > 0) {
+                <p-button
+                  class="spell-action"
+                  [label]="waterHandling === 0 ? ('Learn spell' | translate) : ('Upgrade spell' | translate)"
+                  (onClick)="learnOrUpgrade('Water Strike')"></p-button>
+              }
+            </div>
+          } @else {
+            <div class="blocked">
+              <label class="blockLbl">{{'reach5' | translate}}</label>
+            </div>
           }
         </div>
-      </div>
 
-      <div class="spell-card">
-        <h3>Water Strike</h3>
-        @if (userLevel >= 5) {
-          <div class="description">
-            {{'water' | translate}}
-            <div class="level-row">{{'Your spell level' | translate}}: {{waterHandling}}</div>
-            @if (freePoints > 0) {
-              <p-button
-                class="spell-action"
-                [label]="waterHandling === 0 ? ('Learn spell' | translate) : ('Upgrade spell' | translate)"
-                (onClick)="learnOrUpgrade('Water Strike')"></p-button>
-            }
-          </div>
-        } @else {
-          <div class="blocked">
-            <label class="blockLbl">{{'reach5' | translate}}</label>
-          </div>
-        }
-      </div>
+        <div class="spell-card">
+          <h3>Fire Strike</h3>
+          @if (userLevel >= 12) {
+            <div class="description">
+              {{'fire' | translate}}
+              <div class="level-row">{{'Your spell level' | translate}}: {{fireHandling}}</div>
+              @if (freePoints > 0) {
+                <p-button
+                  class="spell-action"
+                  [label]="fireHandling === 0 ? ('Learn spell' | translate) : ('Upgrade spell' | translate)"
+                  (onClick)="learnOrUpgrade('Fire Strike')"></p-button>
+              }
+            </div>
+          } @else {
+            <div class="blocked">
+              <label class="blockLbl">{{'reach12' | translate}}</label>
+            </div>
+          }
+        </div>
 
-      <div class="spell-card">
-        <h3>Fire Strike</h3>
-        @if (userLevel >= 12) {
-          <div class="description">
-            {{'fire' | translate}}
-            <div class="level-row">{{'Your spell level' | translate}}: {{fireHandling}}</div>
-            @if (freePoints > 0) {
-              <p-button
-                class="spell-action"
-                [label]="fireHandling === 0 ? ('Learn spell' | translate) : ('Upgrade spell' | translate)"
-                (onClick)="learnOrUpgrade('Fire Strike')"></p-button>
-            }
-          </div>
-        } @else {
-          <div class="blocked">
-            <label class="blockLbl">{{'reach12' | translate}}</label>
-          </div>
-        }
-      </div>
-
-      <div class="spell-card">
-        <h3>Air Strike</h3>
-        @if (userLevel >= 25) {
-          <div class="description">
-            {{'air' | translate}}
-            <div class="level-row">{{'Your spell level' | translate}}: {{airHandling}}</div>
-            @if (freePoints > 0) {
-              <p-button
-                class="spell-action"
-                [label]="airHandling === 0 ? ('Learn spell' | translate) : ('Upgrade spell' | translate)"
-                (onClick)="learnOrUpgrade('Air Strike')"></p-button>
-            }
-          </div>
-        } @else {
-          <div class="blocked">
-            <label class="blockLbl">{{'reach25' | translate}}</label>
-          </div>
-        }
+        <div class="spell-card">
+          <h3>Air Strike</h3>
+          @if (userLevel >= 25) {
+            <div class="description">
+              {{'air' | translate}}
+              <div class="level-row">{{'Your spell level' | translate}}: {{airHandling}}</div>
+              @if (freePoints > 0) {
+                <p-button
+                  class="spell-action"
+                  [label]="airHandling === 0 ? ('Learn spell' | translate) : ('Upgrade spell' | translate)"
+                  (onClick)="learnOrUpgrade('Air Strike')"></p-button>
+              }
+            </div>
+          } @else {
+            <div class="blocked">
+              <label class="blockLbl">{{'reach25' | translate}}</label>
+            </div>
+          }
+        </div>
       </div>
     </div>
   </div>

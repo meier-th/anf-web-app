@@ -1,7 +1,12 @@
 #chat{
     width: 100%;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     .admin{
-        font-size: 100%;
+        font-size: 92%;
         color: #c084b4;
     }
     .ordinary{
@@ -10,7 +15,9 @@
         font-weight: normal;
         color: springgreen;
     }
-    background: rgb(19, 23, 27);
+    background: rgba(248, 250, 252, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
     float: right;
     position: relative;
   padding: 10px;
@@ -37,6 +44,15 @@
   align-items: center;
   gap: 10px;
   margin-top: 8px;
+  flex: 0 0 auto;
+}
+
+#admin-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  flex: 0 0 auto;
 }
 
 #send {
@@ -61,10 +77,12 @@
 
 ul {
   padding: 0;
+  margin: 0;
 }
 .msg {
-  height: 200px;
-  overflow-y: scroll;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 

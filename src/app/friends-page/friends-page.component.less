@@ -6,9 +6,17 @@
 @label-colour: #aa825a;
 @margin-value: 10px;
 
-.friendsList {
-  height: 300px;
+:host {
   display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.friendsList {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   color: white;
 
   .tabs {
@@ -34,8 +42,10 @@
   }
 
   .onePage {
-    height: 250px;
-    overflow-y: scroll;
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 6px;
     padding: 8px;

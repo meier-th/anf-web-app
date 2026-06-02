@@ -30,16 +30,6 @@
         <p>{{'Game' | translate }}</p>
       </div>
     }
-    @if (loggedIn && router.url === '/main') {
-      <div class="pages" (click)="openHistoryDialog()">
-        <p>{{'History' | translate }}</p>
-      </div>
-    }
-    @if (loggedIn && router.url === '/main') {
-      <div class="pages" (click)="router.navigateByUrl('spells')">
-        <p>{{'Spells' | translate }}</p>
-      </div>
-    }
   </div>
   <div class="login">
     @if (!loggedIn) {
@@ -71,7 +61,19 @@
 <img id = "showMenuButton" src="../../assets/menuButton.png" (click)="display = true"/>
 
 <div class="menu">
-  <div class="pages language-tab" [class.open]="languageMenuOpen">
+  @if (router.url === '/start') {
+    <div class="pages" (click)="router.navigateByUrl('info')">
+      <p>{{'About project' | translate }}</p>
+    </div>
+  }
+  @if (loggedIn && router.url !== '/main') {
+    <div class="pages" (click)="router.navigateByUrl('main')">
+      <p>{{'Game' | translate }}</p>
+    </div>
+  }
+</div>
+<div class="account-controls">
+  <div class="language-tab" [class.open]="languageMenuOpen">
     <button type="button" class="lang-trigger" (click)="toggleLanguageMenu($event)">
       <span class="flag-icon">{{currentLanguage === 'ru' ? '🇷🇺' : '🇬🇧'}}</span>
       <span>{{'Language' | translate}}</span>
@@ -89,48 +91,17 @@
       </div>
     }
   </div>
-  @if (router.url === '/start') {
-    <div class="pages" (click)="router.navigateByUrl('info')">
-      <p>{{'About project' | translate }}</p>
-    </div>
-  }
-  @if (loggedIn && router.url !== '/main') {
-    <div class="pages" (click)="router.navigateByUrl('main')">
-      <p>{{'Game' | translate }}</p>
-    </div>
-  }
-  @if (loggedIn && router.url === '/main') {
-    <div class="pages" (click)="openHistoryDialog()">
-      <p>{{'History' | translate }}</p>
-    </div>
-  }
-  @if (loggedIn && router.url === '/main') {
-    <div class="pages" (click)="router.navigateByUrl('spells')">
-      <p>{{'Spells' | translate }}</p>
-    </div>
-  }
-</div>
-<div class="login">
   @if (!loggedIn) {
     <p-button id="account-button" label="{{'Log in' | translate }}"
     (click)="showLoginBlock()"></p-button>
   }
-</div>
-@if (loggedIn) {
-  <div class="login"><br>
-    @if (loggedIn) {
-      <p-button id="logout-button" label="{{'Log out' | translate }}" (click)="logout()"></p-button>
-    }
-  </div>
-}
-@if (loggedIn) {
-  <div class="login">
+  @if (loggedIn) {
     <p id="login">{{login}}</p>
-  </div>
-}
+    <p-button id="logout-button" label="{{'Log out' | translate }}" (click)="logout()"></p-button>
+  }
+</div>
 <p-confirmDialog></p-confirmDialog>
 </div>
 <div id="content">
   <router-outlet></router-outlet>
 </div>
-<p-toast position="top-center"></p-toast>

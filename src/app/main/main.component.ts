@@ -12,7 +12,6 @@ import {TranslatePipe} from '../services/translate.pipe';
 import {AuthApiService} from '../core/api/auth-api.service';
 import {SessionStore} from '../core/state/session.store';
 import {WebsocketGatewayService} from '../core/realtime/websocket-gateway.service';
-import {HistoryComponent} from '../history/history.component';
 
 @Component({
   selector: 'app-main',
@@ -117,14 +116,6 @@ export class MainComponent implements OnInit, OnDestroy {
     this.cookieService.delete('loggedIn');
     this.cookieService.delete('username');
     this.messageService.add({severity: 'success', summary: this.pipe.transform('Success'), detail: this.pipe.transform('Logged out')});
-  }
-
-  openHistoryDialog(): void {
-    this.dialog = this.dialogService.open(HistoryComponent, {
-      width: '980px',
-      height: '640px',
-      closable: false
-    });
   }
 
   ngOnDestroy(): void {

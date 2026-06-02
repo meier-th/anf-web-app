@@ -1,20 +1,22 @@
-<div>
-  <p>
-    {{type}} {{'fight' | translate}}: {{area}}
-  </p>
-  <p-pickList sourceHeader="{{'Ready users' | translate}}" [source]="users"
-              targetHeader="{{'Invited users' | translate}}" [target]="selected"
-              [showSourceControls]="false" [showTargetControls]="false"
-              [responsive]="true" [dragdrop]="true"
-              filterBy="toString()" (onMoveToTarget)="validateAmount($event)"
-              (onMoveToSource)="checkReadiness()"
-              [metaKeySelection]="false"  [showTargetFilter]="false">
-    <ng-template let-user pTemplate="item">
-      <div class="ready">
-        {{user}}
-      </div>
-    </ng-template>
-  </p-pickList>
-  <p-button id="start" label="{{'Start' | translate}}" [disabled]="disabled" (onClick)="startFight()"></p-button>
-
+<div class="queue-modal">
+  <div class="queue-header">
+    <h2>{{type}} {{'fight' | translate}}: {{area}}</h2>
+    <button type="button" class="close-btn" (click)="closeLobby()" aria-label="Close lobby">X</button>
+  </div>
+  <div class="queue-content">
+    <p-pickList sourceHeader="{{'Ready users' | translate}}" [source]="users"
+                targetHeader="{{'Invited users' | translate}}" [target]="selected"
+                [showSourceControls]="false" [showTargetControls]="false"
+                [responsive]="true" [dragdrop]="true"
+                filterBy="toString()" (onMoveToTarget)="validateAmount($event)"
+                (onMoveToSource)="checkReadiness()"
+                [metaKeySelection]="false"  [showTargetFilter]="false">
+      <ng-template let-user pTemplate="item">
+        <div class="ready">
+          {{user}}
+        </div>
+      </ng-template>
+    </p-pickList>
+    <p-button id="start" label="{{'Start' | translate}}" [disabled]="disabled" (onClick)="startFight()"></p-button>
+  </div>
 </div>
