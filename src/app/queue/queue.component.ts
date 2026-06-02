@@ -1,16 +1,11 @@
 import {Component, Injector, OnDestroy, OnInit, Optional} from '@angular/core';
 import {AreaService} from '../services/area/area.service';
-import {HttpClient, HttpParams, HttpSentEvent} from '@angular/common/http';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import {CookieService} from 'ngx-cookie-service';
-import {Button} from 'primeng/button';
-import {FightComponent} from '../fight/fight.component';
 import {FightService} from '../services/fight/fight.service';
-import {User} from '../classes/user';
 import {MainComponent} from '../main/main.component';
-import {CompatClient, Stomp} from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
-import {ProfilePageComponent} from '../profile-page/profile-page.component';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
+import {ApiConfigService} from '../core/config/api-config.service';
 
 @Component({
   selector: 'app-queue',
@@ -21,151 +16,279 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
 export class QueueComponent implements OnInit, OnDestroy {
 
   area: string;
-  users: string[];
-  selected: string[];
-  private stompClient: CompatClient;
+  users: string[] = [];
+  players: string[] = [];
+  openLobbies: Array<{
+    lobbyUuid: string;
+    fightMode: string;
+    leader: string;
+    players: string[];
+    playerCount: number;
+    capacity: number;
+    availableSlots: number;
+  }> = [];
   type: string;
-  disabled: boolean;
+  disabled = true;
+  isPvpLobbyMode = false;
   parent = this.injector.get(MainComponent);
-  id: number;
-  approved: string[];
+  id: string;
+  lobbyUuid = '';
+  joinLobbyUuid = '';
+  isLeader = false;
+  expectedPlayers = 1;
+  statusMessage = 'Preparing lobby...';
+  copyFeedback = '';
+  private readonly username: string;
+  private pollLobbyId: ReturnType<typeof setInterval> | null = null;
   started = false;
   constructor(private areaService: AreaService, private http: HttpClient,
               private cookieService: CookieService, private fightService: FightService,
               private injector: Injector,
+              private apiConfig: ApiConfigService,
               @Optional() private dialogRef: DynamicDialogRef | null) {
+    this.username = this.cookieService.get('username');
   }
 
   ngOnInit() {
     this.area = this.areaService.selectedArea;
     this.type = this.areaService.pvp ? 'PVP' : 'PVE';
-    console.log(this.areaService);
-    this.http.get('http://localhost:8080/ready', {withCredentials: true}).subscribe((data: string[]) => {
+    this.isPvpLobbyMode = this.areaService.pvp;
+    this.expectedPlayers = this.areaService.pvp ? 2 : 1;
+    this.http.get(this.apiConfig.buildUrl('/ready'), {withCredentials: true}).subscribe((data: string[]) => {
       this.users = data.filter((item) => item !== this.cookieService.get('username'));
     });
-    this.selected = [];
-    this.disabled = this.areaService.pvp;
-    this.initializeWebsockets();
-    this.http.get('http://localhost:8080/fight/createQueue', {
-      withCredentials: true
-    }).subscribe((response: { queueId: number }) => {
-      this.id = response.queueId;
-    });
-    this.approved = [];
+    if (this.isPvpLobbyMode) {
+      this.statusMessage = 'Select a lobby to join, create your own, or use a code.';
+      this.loadOpenLobbies();
+      return;
+    }
+    this.createLobby();
   }
 
-  validateAmount(event) {
-    const max = this.areaService.pvp ? 1 : 5;
-    if (this.selected.length > max) {
-      this.users.push(this.selected.pop());
+  joinLobby(): void {
+    const lobbyUuid = this.joinLobbyUuid.trim();
+    if (!lobbyUuid) {
+      return;
     }
+    this.joinLobbyByUuid(lobbyUuid);
+  }
 
-    for (let i = 0; i < this.selected.length; i++) {
-      this.send(this.areaService.pvp ? 'pvp' : 'pve', this.selected[i], this.id);
+  joinExistingLobby(lobbyUuid: string): void {
+    this.joinLobbyByUuid(lobbyUuid);
+  }
+
+  createLobby(): void {
+    if (this.lobbyUuid) {
+      this.statusMessage = 'You are already in a lobby.';
+      return;
     }
+    this.http.post<{ lobbyUuid: string }>(
+      this.apiConfig.buildUrl('/fight/lobbies'),
+      null,
+      {
+      withCredentials: true,
+      params: new HttpParams().append('mode', this.areaService.pvp ? 'PVP' : 'TEAM_PVE')
+    }).subscribe((response) => {
+      this.lobbyUuid = response.lobbyUuid;
+      this.id = response.lobbyUuid;
+      this.isLeader = true;
+      this.statusMessage = 'Lobby created. Share the code and wait for players.';
+      this.refreshLobby();
+      this.startLobbyPolling();
+      this.loadOpenLobbies();
+    });
+  }
+
+  leaveLobby(): void {
+    if (!this.lobbyUuid) {
+      return;
+    }
+    if (this.pollLobbyId) {
+      clearInterval(this.pollLobbyId);
+      this.pollLobbyId = null;
+    }
+    const lobbyToLeave = this.lobbyUuid;
+    const request = this.isLeader
+      ? this.http.delete(this.apiConfig.buildUrl(`/fight/lobbies/${lobbyToLeave}`), {withCredentials: true})
+      : this.http.post(this.apiConfig.buildUrl(`/fight/lobbies/${lobbyToLeave}/leave`), null, {withCredentials: true});
+    request.subscribe(() => {
+      this.clearCurrentLobbyState();
+      if (this.isPvpLobbyMode) {
+        this.statusMessage = 'Select a lobby to join, create your own, or use a code.';
+        this.loadOpenLobbies();
+      }
+    });
+  }
+
+  loadOpenLobbies(): void {
+    if (!this.isPvpLobbyMode) {
+      return;
+    }
+    this.http.get<{
+      lobbies: Array<{
+        lobbyUuid: string;
+        fightMode: string;
+        leader: string;
+        players: string[];
+        playerCount: number;
+        capacity: number;
+        availableSlots: number;
+      }>
+    }>(this.apiConfig.buildUrl('/fight/lobbies'), {
+      withCredentials: true,
+      params: new HttpParams().append('mode', 'PVP')
+    }).subscribe((response) => {
+      this.openLobbies = (response.lobbies ?? []).filter((lobby) => lobby.availableSlots > 0);
+    });
+  }
+
+  private joinLobbyByUuid(lobbyUuid: string): void {
+    if (this.lobbyUuid && this.lobbyUuid !== lobbyUuid) {
+      this.statusMessage = 'Leave your current lobby first.';
+      return;
+    }
+    this.http.post(
+      this.apiConfig.buildUrl(`/fight/lobbies/${lobbyUuid}/join`),
+      null,
+      {
+      withCredentials: true
+    }).subscribe(() => {
+      this.lobbyUuid = lobbyUuid;
+      this.id = lobbyUuid;
+      this.statusMessage = 'Joined lobby. Waiting for leader to start.';
+      this.refreshLobby();
+      this.startLobbyPolling();
+      this.loadOpenLobbies();
+    });
   }
 
   startFight() {
-    if (this.type === 'PVP') {
-      this.http.get('http://localhost:8080/fight/startPvp', {
-        withCredentials: true,
-        params: new HttpParams().append('queueId', this.id.toString())
-      }).subscribe((data: {
-        id: number,
-        type: string,
-        fighters1: string[],
-        fighters2: string[]
-      }) => {
-        this.started = true;
-        console.log(data);
-        this.parent.router.navigateByUrl('fight/' + this.type.toLowerCase() + '/' + data.id);
-        this.dialogRef?.close();
-      });
-
-    } else {
-      this.http.get('http://localhost:8080/fight/startPve', {
-        withCredentials: true,
-        params: new HttpParams().append('queueId', this.id.toString())
-        .append('bossId', this.area)
-      }).subscribe((data: {
-        id: number
-      }) => {
-        this.started = true;
-        console.log(data);
-        this.parent.router.navigateByUrl('/fight/pve/' + data.id);
-        this.dialogRef?.close();
-      });
+    if (!this.lobbyUuid) {
+      return;
     }
-  }
-
-  closeLobby(): void {
-    this.dialogRef?.close();
-  }
-
-  send(type: string, username: string, id: number): void {
-    this.disabled = true;
-    this.http.get('http://localhost:8080/fight/invite', {
+    let params = new HttpParams();
+    if (!this.areaService.pvp) {
+      params = params.append('bossId', this.area);
+    }
+    this.http.post<{ fightUuid: string }>(
+      this.apiConfig.buildUrl(`/fight/lobbies/${this.lobbyUuid}/start`),
+      null,
+      {
       withCredentials: true,
-      params: new HttpParams()
-        .append('type', type)
-        .append('username', username)
-        .append('id', id.toString())
-    })
-      .subscribe(() => {
-        console.log(document.getElementsByClassName('ui-picklist-target'));
-        const array = document.getElementsByClassName('ui-picklist-target')[0]
-          .getElementsByClassName('ready');
-        console.log(array);
-        for (let j = 0; j < array.length; j++) {
-          console.log(array[j]);
-          array[j].classList.replace('ready', 'pending');
-        }
-      });
-  }
-
-  initializeWebsockets(): void {
-    const ws = new SockJS('http://localhost:8080/socket');
-    this.stompClient = Stomp.over(ws);
-    const that = this;
-    this.stompClient.connect({}, function (frame) {
-      that.stompClient.subscribe('/user/approval', (message) => {
-        console.log('Approval: ' + message);
-        const username = message.body.substring(0, message.body.indexOf(':'));
-        const pending = document.getElementsByClassName('ui-picklist-target')[0]
-          .getElementsByClassName('pending');
-        that.approved.push(username);
-        that.checkReadiness();
-        for (let i = 0; i < pending.length; i++) {
-          if (pending[i].innerHTML.substring(1, pending[i].innerHTML.length - 1) === username) {
-            pending[i].classList.replace('pending', 'ready');
-            break;
-          }
-        }
-      });
+      params
+    }).subscribe((data) => {
+      this.started = true;
+      this.fightService.type = this.areaService.pvp ? 'pvp' : 'pve';
+      this.fightService.id = data.fightUuid;
+      this.fightService.valuesSet = true;
+      this.parent.router.navigateByUrl(`/fight/${this.fightService.type}/${data.fightUuid}`);
+      this.dialogRef?.close();
     });
   }
 
-  checkReadiness() {
-    let check = false;
-    for (let i = 0; i < this.selected.length; i++) {
-      if (!this.approved.includes(this.selected[i])) {
-        check = true;
-        break;
-      }
+  closeLobby(): void {
+    this.cleanupLobby();
+    this.dialogRef?.close();
+  }
+
+  refreshLobby(): void {
+    if (!this.lobbyUuid) {
+      return;
     }
-    if (this.areaService.pvp && this.selected.length < 1) {
-      check = true;
+    this.http.get<{
+      lobbyUuid: string;
+      fightMode: string;
+      leader: string;
+      players: string[];
+    }>(this.apiConfig.buildUrl(`/fight/lobbies/${this.lobbyUuid}`), {withCredentials: true})
+      .subscribe((lobby) => {
+        this.players = lobby.players ?? [];
+        this.isLeader = lobby.leader === this.username;
+        this.disabled = !(this.isLeader && this.players.length >= this.expectedPlayers);
+        this.statusMessage = this.buildStatusMessage();
+        this.loadOpenLobbies();
+      });
+  }
+
+  copyLobbyCode(): void {
+    if (!this.lobbyUuid) {
+      return;
     }
-    this.disabled = check;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(this.lobbyUuid).then(() => {
+        this.copyFeedback = 'Lobby code copied.';
+      }).catch(() => {
+        this.copyFallback();
+      });
+      return;
+    }
+    this.copyFallback();
+  }
+
+  private copyFallback(): void {
+    const input = document.createElement('input');
+    input.value = this.lobbyUuid;
+    document.body.appendChild(input);
+    input.select();
+    try {
+      document.execCommand('copy');
+      this.copyFeedback = 'Lobby code copied.';
+    } catch {
+      this.copyFeedback = 'Could not copy automatically.';
+    }
+    document.body.removeChild(input);
+  }
+
+  private buildStatusMessage(): string {
+    if (!this.lobbyUuid) {
+      return 'Preparing lobby...';
+    }
+    if (!this.isLeader) {
+      return `Waiting for leader. ${this.players.length}/${this.expectedPlayers} players in lobby.`;
+    }
+    if (this.players.length < this.expectedPlayers) {
+      return `Waiting for players: ${this.players.length}/${this.expectedPlayers}.`;
+    }
+    return 'Ready to start.';
+  }
+
+  private startLobbyPolling(): void {
+    if (this.pollLobbyId) {
+      return;
+    }
+    this.pollLobbyId = setInterval(() => this.refreshLobby(), 3000);
+  }
+
+  private cleanupLobby(): void {
+    if (this.pollLobbyId) {
+      clearInterval(this.pollLobbyId);
+      this.pollLobbyId = null;
+    }
+    if (!this.lobbyUuid || this.started) {
+      return;
+    }
+    if (this.isLeader) {
+      this.http.delete(this.apiConfig.buildUrl(`/fight/lobbies/${this.lobbyUuid}`), {
+        withCredentials: true
+      }).subscribe();
+      return;
+    }
+    this.http.post(this.apiConfig.buildUrl(`/fight/lobbies/${this.lobbyUuid}/leave`), null, {
+      withCredentials: true
+    }).subscribe();
+  }
+
+  private clearCurrentLobbyState(): void {
+    this.id = '';
+    this.lobbyUuid = '';
+    this.players = [];
+    this.isLeader = false;
+    this.disabled = true;
+    this.copyFeedback = '';
   }
 
   ngOnDestroy() {
-    if (!this.started) {
-      this.http.get('http://localhost:8080/fight/closeQueue', {
-        withCredentials: true,
-        params: new HttpParams().append('id', this.id.toString())
-      }).subscribe();
-    }
+    this.cleanupLobby();
   }
 
 }

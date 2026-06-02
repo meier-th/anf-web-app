@@ -7,15 +7,15 @@ import {Boss} from '../../classes/boss';
 })
 export class FightService {
   private _valuesSet  = false;
-  private _id: number;
+  private _id: string;
   private _type: string;
   private _author: string;
 
-  get id(): number {
+  get id(): string {
     return this._id;
   }
 
-  set id(value: number) {
+  set id(value: string) {
     this._id = value;
   }
 

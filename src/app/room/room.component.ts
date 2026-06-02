@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {FightService} from '../services/fight/fight.service';
-import {HttpClient, HttpParams} from '@angular/common/http';
+import {HttpClient} from '@angular/common/http';
+import {ApiConfigService} from '../core/config/api-config.service';
 
 @Component({
   selector: 'app-room',
@@ -9,12 +10,16 @@ import {HttpClient, HttpParams} from '@angular/common/http';
   styleUrls: ['./room.component.less']
 })
 export class RoomComponent implements OnInit {
-  id: number;
+  id: string;
   type: string;
   author: string;
   accepted = false;
 
-  constructor(private fightService: FightService, private http: HttpClient) {
+  constructor(
+    private fightService: FightService,
+    private http: HttpClient,
+    private apiConfig: ApiConfigService
+  ) {
   }
 
   ngOnInit() {
@@ -25,11 +30,8 @@ export class RoomComponent implements OnInit {
 
   join() {
     this.accepted = true;
-    this.http.get('http://localhost:8080/fight/join', {
-      withCredentials: true,
-      params: new HttpParams()
-        .append('author', this.author)
-        .append('id', this.id.toString())
+    this.http.post(this.apiConfig.buildUrl(`/fight/lobbies/${this.id}/join`), null, {
+      withCredentials: true
     }).subscribe();
   }
 

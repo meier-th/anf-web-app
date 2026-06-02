@@ -76,7 +76,7 @@ export class FightComponent implements OnInit, OnDestroy {
   loaded = false;
   type: string;
   private stompClient;
-  id: number;
+  id: string;
   selectedSpell = 'Physical attack';
   map: { [key: string]: string } = {};
   used = 'physical';
@@ -95,9 +95,9 @@ export class FightComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (!this.fightService.valuesSet) {
-      const url = this.parent.router.url;
-      this.id = Number.parseInt(url.substring(11), 10);
-      this.type = url.substring(7, 10);
+      const segments = this.parent.router.url.split('/').filter((segment) => segment.length > 0);
+      this.type = segments[1] ?? '';
+      this.id = segments[2] ?? '';
     } else {
       this.id = this.fightService.id;
       this.type = this.fightService.type;
@@ -478,7 +478,7 @@ export class FightComponent implements OnInit, OnDestroy {
     if (type.toLowerCase() === 'pvp') {
       this.http.post('http://localhost:8080/fight/info', null, {
         withCredentials: true,
-        params: new HttpParams().append('id', this.id.toString())
+        params: new HttpParams().append('fightUuid', this.id)
       }).subscribe((data: {
         id: number, type: string,
         fighters1: User, fighters2: User,
@@ -515,7 +515,7 @@ export class FightComponent implements OnInit, OnDestroy {
     } else {
       this.http.post('http://localhost:8080/fight/info', null, {
         withCredentials: true,
-        params: new HttpParams().append('id', this.id.toString())
+        params: new HttpParams().append('fightUuid', this.id)
       }).subscribe((data: {
         id: number, type: string, fighters1: User[], currentName: string, timeLeft: number,
         boss: Boss, animals1: NinjaAnimal[]
@@ -599,7 +599,7 @@ export class FightComponent implements OnInit, OnDestroy {
     this.http.post('http://localhost:8080/fight/attack', null, {
       withCredentials: true,
       params: new HttpParams()
-        .append('fightId', this.id.toString())
+        .append('fightUuid', this.id)
         .append('enemy', enemy)
         .append('spellName', this.selectedSpell)
     }).subscribe((data: {
@@ -617,7 +617,7 @@ export class FightComponent implements OnInit, OnDestroy {
       this.type.substring(0, 1).toUpperCase() +
       this.type.substring(1).toLowerCase(), null, {
       withCredentials: true,
-      params: new HttpParams().append('fightId', this.id.toString())
+      params: new HttpParams().append('fightUuid', this.id)
     }).subscribe((response: NinjaAnimal) => {
       console.log(response);
       this.summonEnabled = false;
