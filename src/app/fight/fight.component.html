@@ -39,4 +39,16 @@
       <p class="attack-event">{{event}}</p>
     }
   </div>
+  @if (showDebugPanel) {
+    <div id="fight-debug">
+      @for (line of debugLines; track line) {
+        <p class="debug-line">{{line}}</p>
+      }
+    </div>
+  }
+  @if (showFightResult) {
+    <div class="fight-result-overlay">
+      <app-fight-result (confirm)="onFightResultOk()"></app-fight-result>
+    </div>
+  }
 </div>

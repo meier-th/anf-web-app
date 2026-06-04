@@ -1,9 +1,8 @@
 import {
   AfterContentInit,
   Component,
-  ComponentFactory,
   ComponentFactoryResolver,
-  ComponentRef, ElementRef, Injector, OnDestroy,
+  ComponentRef, Injector, OnDestroy,
   OnInit,
   ViewChild,
   ViewContainerRef
@@ -11,13 +10,10 @@ import {
 import {FightService} from '../services/fight/fight.service';
 import {FightEndService} from '../services/fight-end.service';
 import {User} from '../classes/user';
-import {FightResultComponent} from '../fight-result/fight-result.component';
 import {Boss} from '../classes/boss';
 import {CharacterComponent} from '../character/character.component';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {MainComponent} from '../main/main.component';
-import {ConfirmationService, MessageService} from 'primeng/api';
-import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Character} from '../classes/character';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 import SockJS from 'sockjs-client';
@@ -59,7 +55,6 @@ type AttackAnnouncement = {
 export class FightComponent implements OnInit, OnDestroy {
   allies: User[] = [];
   enemies: User[] = [];
-  private dialog: DynamicDialogRef;
   boss: Boss;
   died: string[] = [];
   animals1: NinjaAnimal[] = [];
@@ -87,10 +82,17 @@ export class FightComponent implements OnInit, OnDestroy {
   private announcementCounter = 0;
   private pendingAnnouncementDelays: Array<ReturnType<typeof setTimeout>> = [];
   private timeoutReported = false;
+  private fightEnded = false;
+  showFightResult = false;
+  private ratingBeforeFight: number | undefined;
+  private localPlayerDead = false;
+  private bossElement?: HTMLElement;
+  debugLines: string[] = [];
+  showDebugPanel = false;
+  private pvpCurrentUserIsBackendSecond = false;
 
   constructor(private router: Router, private transl: TranslatePipe,
-              private dialogService: DialogService,
-              private confirmationService: ConfirmationService, private fightService: FightService,
+              private fightService: FightService,
               private resolver: ComponentFactoryResolver, private http: HttpClient,
               private injector: Injector, private endServ: FightEndService, private apiConfig: ApiConfigService) {
   }
@@ -106,6 +108,7 @@ export class FightComponent implements OnInit, OnDestroy {
     }
     this.initializeWebSockets();
     this.getFightInfo(this.type);
+    this.captureRatingBeforeFight();
   }
 
   initializeWebSockets() {
@@ -127,10 +130,16 @@ export class FightComponent implements OnInit, OnDestroy {
             everyoneDead: boolean,
             nextAttacker: string
           }>JSON.parse(response.body);
+          that.pushDebug(`WS PVP ${fightState.attacker} -> ${fightState.target} (${fightState.attackName}) dmg=${fightState.damage}`);
           that.scheduleAttackAnnouncement(fightState);
           that.appendAttackEvent(
             `${fightState.attacker} -> ${fightState.target}: ${fightState.damage} (${fightState.attackName})`);
           that.setTimer(fightState.nextAttacker, 30200);
+          if (that.isSurrenderState(fightState)) {
+            that.handleSurrenderState(fightState);
+            return;
+          }
+          that.animateAttackVisual(fightState.attacker, fightState.target, fightState.attackName);
           console.log(fightState);
 
           // find attacker and target
@@ -202,14 +211,8 @@ export class FightComponent implements OnInit, OnDestroy {
             targetUser.character.currentChakra -= fightState.chakraBurn;
             that.applyUserBars(fightState.target, that.userHpPercent(targetUser), that.userChakraPercent(targetUser));
           } else if (targetAnimal) {
-            targetAnimal.currentHP -= fightState.damage;
-            if (targetAnimal.currentHP < 0) {
-              targetAnimal.currentHP = 0;
-            }
-            const targetStats = that.resolveAnimalStatsElement(fightState.target, that.animals1.includes(targetAnimal));
-            if (targetStats) {
-              that.setHPPercent(targetStats, that.animalHpPercent(targetAnimal));
-            }
+            const hpPercent = that.applyDamageToAnimal(targetAnimal, fightState.damage);
+            that.applyAnimalBar(fightState.target, hpPercent, that.animals1.includes(targetAnimal));
           }
 
           // set chakra for attacker
@@ -261,10 +264,16 @@ export class FightComponent implements OnInit, OnDestroy {
             everyoneDead: boolean,
             nextAttacker: string
           }>JSON.parse(response.body);
+          that.pushDebug(`WS PVE ${fightState.attacker} -> ${fightState.target} (${fightState.attackName}) dmg=${fightState.damage}`);
           that.scheduleAttackAnnouncement(fightState);
           that.appendAttackEvent(
             `${fightState.attacker} -> ${fightState.target}: ${fightState.damage} (${fightState.attackName})`);
           that.setTimer(fightState.nextAttacker, 30200);
+          if (that.isSurrenderState(fightState)) {
+            that.handleSurrenderState(fightState);
+            return;
+          }
+          that.animateAttackVisual(fightState.attacker, fightState.target, fightState.attackName);
           console.log(fightState);
 
           // find attacker and target
@@ -341,14 +350,11 @@ export class FightComponent implements OnInit, OnDestroy {
               console.log(fightState.target);
               console.log(targetAnimal);
               try {
-                targetAnimal.currentHP -= fightState.damage;
-                if (targetAnimal.currentHP < 0) {
-                  targetAnimal.currentHP = 0;
-                }
-                const targetStats = that.resolveAnimalStatsElement(fightState.target, that.animals1.includes(targetAnimal));
-                if (targetStats) {
-                  that.setHPPercent(targetStats, that.animalHpPercent(targetAnimal));
-                }
+                const hpPercent = that.applyDamageToAnimal(targetAnimal, fightState.damage);
+                that.applyAnimalBar(
+                  fightState.target,
+                  hpPercent,
+                  that.animals1.includes(targetAnimal));
               } catch (e) {
 
               }
@@ -380,7 +386,9 @@ export class FightComponent implements OnInit, OnDestroy {
         });
       }
       that.stompClient.subscribe('/user/switch', (response) => {
+        that.pushDebug(`WS switch next=${response.body}`);
         that.setTimer(response.body, 30000);
+        that.syncBarsFromServer();
       });
       that.stompClient.subscribe('/user/summon', (response) => {
         const animalState = <{
@@ -481,6 +489,7 @@ export class FightComponent implements OnInit, OnDestroy {
       (<HTMLElement>boss.location.nativeElement).style.position = 'absolute';
       (<HTMLElement>boss.location.nativeElement).style.bottom = '-40px';
       (<HTMLElement>boss.location.nativeElement).style.right = '20px';
+      this.bossElement = <HTMLElement>boss.location.nativeElement;
       (<HTMLElement>boss.location.nativeElement).addEventListener('click', () => {
         this.attack(boss.instance.bossId);
       });
@@ -502,7 +511,8 @@ export class FightComponent implements OnInit, OnDestroy {
         currentName: string, timeLeft: number
       }) => {
         this.setTimer(data.currentName, data.timeLeft);
-        if (data.fighters2.login === this.parent.login) {
+        this.pvpCurrentUserIsBackendSecond = data.fighters2.login === this.parent.login;
+        if (this.pvpCurrentUserIsBackendSecond) {
           const tmp = data.fighters1;
           data.fighters1 = data.fighters2;
           data.fighters2 = tmp;
@@ -643,6 +653,64 @@ export class FightComponent implements OnInit, OnDestroy {
     });
   }
 
+  private captureRatingBeforeFight() {
+    if ((this.type ?? '').toLowerCase() !== 'pvp') {
+      this.ratingBeforeFight = 0;
+      return;
+    }
+    this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true})
+      .subscribe((profile) => {
+        this.ratingBeforeFight = profile?.stats?.rating;
+      });
+  }
+
+  private isSurrenderState(fightState: { attackName?: string }): boolean {
+    return (fightState?.attackName ?? '').toLowerCase() === 'surrender';
+  }
+
+  private handleSurrenderState(fightState: { attacker?: string }) {
+    if ((this.type ?? '').toLowerCase() === 'pvp') {
+      const surrenderedBySelf = (fightState?.attacker ?? '') === this.parent.login;
+      this.finishFight(false, !surrenderedBySelf, surrenderedBySelf, true);
+      return;
+    }
+    this.finishFight(false, false, true, true);
+  }
+
+  private resolveRatingChangeAndShowResult() {
+    if ((this.type ?? '').toLowerCase() !== 'pvp') {
+      this.endServ.ratingChange = 0;
+      this.showFightResult = true;
+      return;
+    }
+    this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true})
+      .subscribe({
+        next: (profile) => {
+          const currentRating = profile?.stats?.rating;
+          if (Number.isFinite(currentRating) && Number.isFinite(this.ratingBeforeFight)) {
+            this.endServ.ratingChange = Number(currentRating) - Number(this.ratingBeforeFight);
+          } else {
+            this.endServ.ratingChange = 0;
+          }
+          // PvP outcome should be derived from authoritative rating update.
+          this.endServ.victory = this.endServ.ratingChange > 0;
+          this.endServ.loss = this.endServ.ratingChange < 0;
+          this.endServ.death = this.localPlayerDead;
+          this.showFightResult = true;
+        },
+        error: () => {
+          this.endServ.ratingChange = 0;
+          this.endServ.death = this.localPlayerDead;
+          this.showFightResult = true;
+        }
+      });
+  }
+
+  onFightResultOk() {
+    this.showFightResult = false;
+    this.router.navigateByUrl('/main');
+  }
+
   attack(enemy: string): any {
     if (this.current !== this.parent.login) {
       return;
@@ -684,6 +752,9 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   private syncBarsFromServer() {
+    if (this.fightEnded) {
+      return;
+    }
     this.http.post(this.apiConfig.buildUrl('/fight/info'), null, {
       withCredentials: true,
       params: new HttpParams().append('fightUuid', this.id)
@@ -702,16 +773,18 @@ export class FightComponent implements OnInit, OnDestroy {
         const side2IsAlly = !!localAllyLogin && side2?.login === localAllyLogin;
 
         (data.animals1 ?? []).forEach((animal) => {
-          const key = this.getAnimalSideKey(animal.name, side1IsAlly);
-          if (this.statsElements[key]) {
-            this.setHPPercent(this.statsElements[key], this.animalHpPercent(animal));
+          const hpPercent = this.animalHpPercent(animal);
+          if (hpPercent === undefined) {
+            this.pushDebug(`animals1 payload missing hp fields: ${JSON.stringify(animal)}`);
           }
+          this.applyAnimalBar(animal.name, hpPercent, side1IsAlly);
         });
         (data.animals2 ?? []).forEach((animal) => {
-          const key = this.getAnimalSideKey(animal.name, side2IsAlly);
-          if (this.statsElements[key]) {
-            this.setHPPercent(this.statsElements[key], this.animalHpPercent(animal));
+          const hpPercent = this.animalHpPercent(animal);
+          if (hpPercent === undefined) {
+            this.pushDebug(`animals2 payload missing hp fields: ${JSON.stringify(animal)}`);
           }
+          this.applyAnimalBar(animal.name, hpPercent, side2IsAlly);
         });
       } else {
         const self = (data.fighters1 ?? []).find((it) => it.login === this.parent.login);
@@ -722,12 +795,19 @@ export class FightComponent implements OnInit, OnDestroy {
           this.setHPPercent(this.statsElements[data.boss.numberOfTails], data.boss.currentHP / data.boss.maxHp * 100);
         }
         (data.animals1 ?? []).forEach((animal) => {
-          const key = this.getAnimalSideKey(animal.name, true);
-          if (this.statsElements[key]) {
-            this.setHPPercent(this.statsElements[key], this.animalHpPercent(animal));
+          const hpPercent = this.animalHpPercent(animal);
+          if (hpPercent === undefined) {
+            this.pushDebug(`pve animals payload missing hp fields: ${JSON.stringify(animal)}`);
           }
+          this.applyAnimalBar(animal.name, hpPercent, true);
         });
       }
+    }, (error) => {
+      // Fight can be removed immediately after a decisive hit.
+      if (error?.status === 404) {
+        return;
+      }
+      console.error(error);
     });
   }
 
@@ -779,8 +859,229 @@ export class FightComponent implements OnInit, OnDestroy {
     const cursor = this.current === this.parent.login ? 'crosshair' : 'default';
     const targets = document.querySelectorAll('.enemy-target');
     targets.forEach((target) => {
-      (target as HTMLElement).style.cursor = cursor;
+      const targetElement = target as HTMLElement;
+      targetElement.style.cursor = cursor;
+      if (this.current === this.parent.login && !this.fightEnded && !this.showFightResult) {
+        targetElement.classList.add('target-glow');
+        targetElement.style.filter = 'drop-shadow(0 0 10px rgba(255, 222, 89, 0.95))';
+      } else {
+        targetElement.classList.remove('target-glow');
+        targetElement.style.filter = '';
+      }
     });
+    this.pushDebug(`Target highlight active=${this.current === this.parent.login} count=${targets.length}`);
+  }
+
+  private animateAttackVisual(attackerId: string, targetId: string, attackName?: string) {
+    if (this.fightEnded || !attackerId || !targetId) {
+      return;
+    }
+    const attackerEl = this.resolveCombatantElement(attackerId);
+    const attackerIsAlly = this.isAllyCombatant(attackerId);
+    const targetEl = this.resolveCombatantElement(targetId, attackerIsAlly === undefined ? undefined : !attackerIsAlly);
+    if (!attackerEl || !targetEl) {
+      this.pushDebug(`Projectile skipped attacker=${attackerId}(${!!attackerEl}) target=${targetId}(${!!targetEl})`);
+      return;
+    }
+    this.pushDebug(`Projectile ${attackName ?? 'Physical'} ${attackerId} -> ${targetId}`);
+    const start = attackerEl.getBoundingClientRect();
+    const end = targetEl.getBoundingClientRect();
+    const startX = start.left + start.width / 2;
+    const startY = start.top + start.height / 2;
+    const endX = end.left + end.width / 2;
+    const endY = end.top + end.height / 2;
+    const projectile = document.createElement('div');
+    projectile.className = 'projectile-rock';
+    const projectileStyle = this.projectileStyleForAttack(attackName);
+    projectile.style.position = 'fixed';
+    projectile.style.width = '16px';
+    projectile.style.height = '16px';
+    projectile.style.borderRadius = '50%';
+    projectile.style.background = projectileStyle.background;
+    projectile.style.border = '1px solid rgba(20, 20, 20, 0.8)';
+    projectile.style.boxShadow = projectileStyle.boxShadow;
+    projectile.style.transform = 'translate(-50%, -50%)';
+    projectile.style.transition = 'transform 0.2s linear';
+    projectile.style.zIndex = '1200';
+    projectile.style.pointerEvents = 'none';
+    projectile.style.left = `${startX}px`;
+    projectile.style.top = `${startY}px`;
+    document.body.appendChild(projectile);
+    requestAnimationFrame(() => {
+      projectile.style.transform = `translate(-50%, -50%) translate(${endX - startX}px, ${endY - startY}px)`;
+    });
+    let settled = false;
+    const cleanup = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      projectile.remove();
+      this.blinkTargetOnImpact(targetEl);
+    };
+    projectile.addEventListener('transitionend', cleanup, {once: true});
+    setTimeout(cleanup, 260);
+  }
+
+  private projectileStyleForAttack(attackName?: string): { background: string; boxShadow: string } {
+    const normalized = (attackName ?? '').trim().toLowerCase();
+    if (normalized.includes('fire')) {
+      return {
+        background: 'radial-gradient(circle at 30% 30%, #ffe08a 0%, #ff7b2f 48%, #c71919 100%)',
+        boxShadow: '0 0 11px rgba(255, 96, 32, 0.85)'
+      };
+    }
+    if (normalized.includes('water')) {
+      return {
+        background: 'radial-gradient(circle at 30% 30%, #d8f6ff 0%, #56b9ff 46%, #1559b5 100%)',
+        boxShadow: '0 0 10px rgba(56, 162, 255, 0.75)'
+      };
+    }
+    if (normalized.includes('air')) {
+      return {
+        background: 'radial-gradient(circle at 30% 30%, #ffffff 0%, #d6f0ff 52%, #9dc3db 100%)',
+        boxShadow: '0 0 11px rgba(214, 240, 255, 0.8)'
+      };
+    }
+    if (normalized.includes('earth')) {
+      return {
+        background: 'radial-gradient(circle at 30% 30%, #cfab7f 0%, #8a6d4f 45%, #533d2b 100%)',
+        boxShadow: '0 0 8px rgba(188, 132, 78, 0.45)'
+      };
+    }
+    if (normalized.includes('boss')) {
+      return {
+        background: 'radial-gradient(circle at 30% 30%, #f1dcff 0%, #9f6bff 50%, #4b1f8f 100%)',
+        boxShadow: '0 0 12px rgba(146, 88, 255, 0.85)'
+      };
+    }
+    return {
+      background: 'radial-gradient(circle at 30% 30%, #d7d7d7 0%, #7d7d7d 45%, #3e3e3e 100%)',
+      boxShadow: '0 0 6px rgba(255, 255, 255, 0.35)'
+    };
+  }
+
+  private applyDamageToAnimal(animal: any, damage: number): number | undefined {
+    const current = this.firstNonNegative(
+      this.readNumber(animal, 'currentHP', 'currentHp', 'hp'),
+      this.findNumberDeep(animal, (path) => path.includes('current') && (path.includes('hp') || path.includes('health')))
+    );
+    const max = this.firstPositive(
+      this.readNumber(animal, 'maxHP', 'maxHp', 'hpAmount'),
+      this.findNumberDeep(animal, (path) => path.includes('max') && (path.includes('hp') || path.includes('health')))
+    );
+    if (current === undefined || max === undefined || max <= 0) {
+      this.pushDebug(`Animal damage skipped (missing values) animal=${animal?.name ?? 'unknown'} dmg=${damage}`);
+      return undefined;
+    }
+    const next = Math.max(0, current - damage);
+    animal.currentHP = next;
+    animal.currentHp = next;
+    const percent = this.toPercent(next, max);
+    this.pushDebug(`Animal damage ${animal?.name ?? 'unknown'}: ${current}/${max} -> ${next}/${max} (${Math.round(percent ?? 0)}%)`);
+    return percent;
+  }
+
+  private blinkTargetOnImpact(targetEl: HTMLElement) {
+    const previousFilter = targetEl.style.filter;
+    const previousTransition = targetEl.style.transition;
+    targetEl.style.transition = 'filter 0.08s linear';
+    targetEl.style.filter = 'brightness(1.6) saturate(1.8) drop-shadow(0 0 12px rgba(255, 40, 40, 0.95))';
+    setTimeout(() => {
+      targetEl.style.filter = previousFilter;
+      targetEl.style.transition = previousTransition;
+    }, 160);
+  }
+
+  private resolveCombatantElement(id: string, preferAllyForAnimal?: boolean): HTMLElement | undefined {
+    if (!id) {
+      return undefined;
+    }
+    if (this.fightersElements[id]) {
+      return this.fightersElements[id];
+    }
+    const tokenSide = this.sideFromAnimalToken(id);
+    if (tokenSide === 'ally') {
+      const allyAnimal = this.findAnimalByToken(this.animals1, id);
+      if (allyAnimal) {
+        return this.animalsElements[this.getAnimalElementSideKey(allyAnimal.name, true)];
+      }
+    } else if (tokenSide === 'enemy') {
+      const enemyAnimal = this.findAnimalByToken(this.animals2, id);
+      if (enemyAnimal) {
+        return this.animalsElements[this.getAnimalElementSideKey(enemyAnimal.name, false)];
+      }
+    } else {
+      if (preferAllyForAnimal === true) {
+        const allyAnimal = this.findAnimalByToken(this.animals1, id);
+        if (allyAnimal) {
+          return this.animalsElements[this.getAnimalElementSideKey(allyAnimal.name, true)];
+        }
+        const enemyAnimal = this.findAnimalByToken(this.animals2, id);
+        if (enemyAnimal) {
+          return this.animalsElements[this.getAnimalElementSideKey(enemyAnimal.name, false)];
+        }
+      } else if (preferAllyForAnimal === false) {
+        const enemyAnimal = this.findAnimalByToken(this.animals2, id);
+        if (enemyAnimal) {
+          return this.animalsElements[this.getAnimalElementSideKey(enemyAnimal.name, false)];
+        }
+        const allyAnimal = this.findAnimalByToken(this.animals1, id);
+        if (allyAnimal) {
+          return this.animalsElements[this.getAnimalElementSideKey(allyAnimal.name, true)];
+        }
+      } else {
+        const enemyAnimal = this.findAnimalByToken(this.animals2, id);
+        if (enemyAnimal) {
+          return this.animalsElements[this.getAnimalElementSideKey(enemyAnimal.name, false)];
+        }
+        const allyAnimal = this.findAnimalByToken(this.animals1, id);
+        if (allyAnimal) {
+          return this.animalsElements[this.getAnimalElementSideKey(allyAnimal.name, true)];
+        }
+      }
+    }
+    if (/^\d+$/.test(id) && this.bossElement) {
+      return this.bossElement;
+    }
+    return undefined;
+  }
+
+  private isAllyCombatant(id: string): boolean | undefined {
+    if (!id) {
+      return undefined;
+    }
+    if (this.allies.some((ally) => ally.login === id)) {
+      return true;
+    }
+    if (this.enemies.some((enemy) => enemy.login === id)) {
+      return false;
+    }
+    const tokenSide = this.sideFromAnimalToken(id);
+    if (tokenSide === 'ally') {
+      return true;
+    }
+    if (tokenSide === 'enemy') {
+      return false;
+    }
+    if (this.findAnimalByToken(this.animals1, id)) {
+      return true;
+    }
+    if (this.findAnimalByToken(this.animals2, id)) {
+      return false;
+    }
+    return undefined;
+  }
+
+  private sideFromAnimalToken(token: string): 'ally' | 'enemy' | undefined {
+    const marker = (token ?? '').length > 3 ? token.charAt(3) : '';
+    if (marker === '1') {
+      return 'ally';
+    }
+    if (marker === '0') {
+      return 'enemy';
+    }
+    return undefined;
   }
 
   private scheduleAttackAnnouncement(fightState: {
@@ -838,7 +1139,7 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   private getAnimalStatsKey(tokenOrName: string): string {
-    return (tokenOrName ?? '').substring(0, 3);
+    return (tokenOrName ?? '').substring(0, 3).toLowerCase();
   }
 
   private getAnimalSideKey(tokenOrName: string, ally: boolean): string {
@@ -847,6 +1148,17 @@ export class FightComponent implements OnInit, OnDestroy {
 
   private getAnimalElementSideKey(tokenOrName: string, ally: boolean): string {
     return `${ally ? 'ally' : 'enemy'}:${tokenOrName ?? ''}`;
+  }
+
+  private buildAnimalTargetToken(tokenOrName: string, ally: boolean): string {
+    // Backend PvP animal slots are keyed by canonical side:
+    // marker '1' => animals1, marker '0' => animals2.
+    // If current user is backend fighter2, enemy animals are in animals1.
+    if ((this.type ?? '').toLowerCase() === 'pvp' && !ally) {
+      const enemyMarker = this.pvpCurrentUserIsBackendSecond ? '1' : '0';
+      return `${this.getAnimalStatsKey(tokenOrName)}${enemyMarker}`;
+    }
+    return `${this.getAnimalStatsKey(tokenOrName)}${ally ? '1' : '0'}`;
   }
 
   private resolveAnimalStatsElement(tokenOrName: string, preferAlly?: boolean): HTMLElement | undefined {
@@ -1052,10 +1364,86 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   private animalHpPercent(animal: any): number | undefined {
-    return this.toPercent(
-      this.readNumber(animal, 'currentHP', 'currentHp'),
-      this.readNumber(animal, 'maxHP', 'maxHp'));
+    const current = this.firstNonNegative(
+      this.readNumber(animal, 'currentHP', 'currentHp', 'hp'),
+      this.findNumberDeep(animal, (path) => path.includes('current') && (path.includes('hp') || path.includes('health')))
+    );
+    const max = this.firstPositive(
+      this.readNumber(animal, 'maxHP', 'maxHp', 'hpAmount'),
+      this.findNumberDeep(animal, (path) => path.includes('max') && (path.includes('hp') || path.includes('health')))
+    );
+    if (current !== undefined && max !== undefined && max > 0) {
+      return this.toPercent(current, max);
+    }
+    return undefined;
   }
+
+  private applyAnimalBar(tokenOrName: string, hp?: number, preferAlly?: boolean) {
+    if (hp === undefined) {
+      const fallbackAnimal = this.resolveAnimalFromToken(tokenOrName, preferAlly);
+      hp = this.animalHpPercent(fallbackAnimal);
+    }
+    if (hp === undefined) {
+      this.pushDebug(`Animal bar skipped hp undefined token=${tokenOrName}`);
+      return;
+    }
+    const candidates: Array<HTMLElement | undefined> = [];
+    if (preferAlly !== undefined) {
+      candidates.push(this.statsElements[this.getAnimalSideKey(tokenOrName, preferAlly)]);
+    } else {
+      candidates.push(this.statsElements[this.getAnimalSideKey(tokenOrName, true)]);
+      candidates.push(this.statsElements[this.getAnimalSideKey(tokenOrName, false)]);
+    }
+    const animalKey = this.getAnimalStatsKey(tokenOrName);
+    const domCandidates = Array.from(document.querySelectorAll('.powers')) as HTMLElement[];
+    const preferredSide = preferAlly === undefined ? undefined : (preferAlly ? 'ally' : 'enemy');
+    const preferredMatches = domCandidates.filter((stats) =>
+      (stats.dataset?.animalKey ?? '') === animalKey
+      && (preferredSide ? (stats.dataset?.animalSide ?? '') === preferredSide : true));
+    const anyMatches = domCandidates.filter((stats) => (stats.dataset?.animalKey ?? '') === animalKey);
+    const fallbackStats = candidates.find((candidate) => !!candidate);
+    let targets: HTMLElement[] = [];
+    if (fallbackStats) {
+      targets = [fallbackStats];
+    } else if (preferAlly !== undefined) {
+      // Side is known: never write to opposite side.
+      targets = preferredMatches;
+    } else {
+      // Side unknown: pick at most one to avoid mirroring both bars.
+      const first = preferredMatches[0] ?? anyMatches[0];
+      targets = first ? [first] : [];
+    }
+    if (targets.length > 0) {
+      targets.forEach((stats) => this.setHPPercent(stats, hp));
+      this.pushDebug(
+        `Animal bar set token=${tokenOrName} side=${preferredSide ?? 'auto'} hp=${Math.round(hp)}% targets=${targets.length}`);
+    } else {
+      this.pushDebug(`Animal bar target NOT found token=${tokenOrName} side=${preferredSide ?? 'auto'} hp=${Math.round(hp)}%`);
+    }
+  }
+
+  private pushDebug(message: string) {
+    console.debug(`[FightDebug] ${message}`);
+    if (!this.showDebugPanel) {
+      return;
+    }
+    const time = new Date().toLocaleTimeString();
+    this.debugLines.unshift(`[${time}] ${message}`);
+    if (this.debugLines.length > 24) {
+      this.debugLines = this.debugLines.slice(0, 24);
+    }
+  }
+
+  private resolveAnimalFromToken(tokenOrName: string, preferAlly?: boolean): NinjaAnimal | undefined {
+    if (preferAlly === true) {
+      return this.findAnimalByToken(this.animals1, tokenOrName);
+    }
+    if (preferAlly === false) {
+      return this.findAnimalByToken(this.animals2, tokenOrName);
+    }
+    return this.findAnimalByToken(this.animals1, tokenOrName) ?? this.findAnimalByToken(this.animals2, tokenOrName);
+  }
+
 
   private applyUserBars(login: string, hp?: number, chakra?: number) {
     const allStats = Array.from(document.querySelectorAll('.powers')) as HTMLElement[];
@@ -1135,6 +1523,9 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   setUserDead(user: User): void {
+    if (user?.login === this.parent.login) {
+      this.localPlayerDead = true;
+    }
     if (this.type === 'pvp') {
       console.log(user.login + ' has perished.');
     } else {
@@ -1186,17 +1577,19 @@ export class FightComponent implements OnInit, OnDestroy {
     }, 3);
   }
 
-  finishFight(death: boolean, victory: boolean, loss: boolean): void {
+  finishFight(death: boolean, victory: boolean, loss: boolean, surrendered = false): void {
+    if (this.fightEnded) {
+      return;
+    }
+    this.fightEnded = true;
     clearTimeout(this.timer);
     this.clearAnnouncements();
     setTimeout(() => {
       this.endServ.death = death;
       this.endServ.loss = loss;
       this.endServ.victory = victory;
-      this.dialog = this.dialogService.open(FightResultComponent, {
-        width: '400px', height: '160px'
-      });
-      this.router.navigateByUrl('/main');
+      this.endServ.surrendered = surrendered;
+      this.resolveRatingChangeAndShowResult();
     }, 1000);
   }
 
@@ -1207,14 +1600,24 @@ export class FightComponent implements OnInit, OnDestroy {
       element = this.alliesContainer.createComponent(factory);
       element.instance.animalName = animal.name;
       const wrapper = <HTMLElement>element.location.nativeElement;
-      this.statsElements[this.getAnimalSideKey(animal.name, true)] = <HTMLElement>wrapper.childNodes[0];
+      const stats = wrapper.querySelector('.powers') as HTMLElement | null;
+      if (stats) {
+        stats.dataset.animalKey = this.getAnimalStatsKey(animal.name);
+        stats.dataset.animalSide = 'ally';
+        this.statsElements[this.getAnimalSideKey(animal.name, true)] = stats;
+      }
       const allyIndex = this.animals1.findIndex((it) => it.name === animal.name);
       this.setPosition(wrapper, this.allies.length + Math.max(allyIndex, 0) + 1);
     } else {
       element = this.enemiesContainer.createComponent(factory);
       element.instance.animalName = animal.name;
       const wrapper = <HTMLElement>element.location.nativeElement;
-      this.statsElements[this.getAnimalSideKey(animal.name, false)] = <HTMLElement>wrapper.childNodes[0];
+      const stats = wrapper.querySelector('.powers') as HTMLElement | null;
+      if (stats) {
+        stats.dataset.animalKey = this.getAnimalStatsKey(animal.name);
+        stats.dataset.animalSide = 'enemy';
+        this.statsElements[this.getAnimalSideKey(animal.name, false)] = stats;
+      }
       wrapper.style.position = 'absolute';
       wrapper.style.bottom = '40px';
       const enemyIndex = this.animals2.findIndex((it) => it.name === animal.name);
@@ -1222,7 +1625,9 @@ export class FightComponent implements OnInit, OnDestroy {
       wrapper.style.transform = 'scaleX(-1)';
       wrapper.classList.add('enemy-target');
       wrapper.addEventListener('click', () => {
-        this.attack(animal.name);
+        const token = this.buildAnimalTargetToken(animal.name, false);
+        this.pushDebug(`Attack request enemy animal ${animal.name} token=${token}`);
+        this.attack(token);
       });
     }
 

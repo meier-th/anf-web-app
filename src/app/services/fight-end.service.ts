@@ -5,9 +5,11 @@ import { Injectable } from '@angular/core';
 })
 export class FightEndService {
 
-  victory: boolean;
-  death: boolean;
-  loss: boolean;
+  victory = false;
+  death = false;
+  loss = false;
+  ratingChange = 0;
+  surrendered = false;
 
   constructor() { }
 }

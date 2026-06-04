@@ -17,6 +17,7 @@ export class CharacterComponent implements OnInit, AfterViewInit {
   private _bossId = 0;
   private _animalName = '';
   private viewReady = false;
+  private bossImageFailed = false;
 
   get animalName(): string {
     return this._animalName;
@@ -38,7 +39,18 @@ export class CharacterComponent implements OnInit, AfterViewInit {
 
   set bossId(value: number) {
     this._bossId = value;
+    this.bossImageFailed = false;
     this.applyVariantVisibility();
+  }
+
+  get bossImageSrc(): string | null {
+    if (this._bossId <= 0) {
+      return null;
+    }
+    if (this.bossImageFailed) {
+      return '../../assets/bidju/1.png';
+    }
+    return `../../assets/bidju/${this._bossId}.png`;
   }
 
   constructor() {
@@ -83,6 +95,10 @@ export class CharacterComponent implements OnInit, AfterViewInit {
       boss.style.height = '20%';
       boss.style.width = 'auto';
     }
+  }
+
+  onBossImageError() {
+    this.bossImageFailed = true;
   }
 
 }

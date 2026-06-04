@@ -1,11 +1,22 @@
-<h2>{{'results' | translate}}:</h2>
-<br>
+<div class="result-card">
+  <h2>{{'results' | translate}}</h2>
   @if (victory) {
     <div class="win">{{'Win' | translate}}</div>
-  }
-  @if (death) {
-    <div class="yellow">{{'Death' | translate}}</div>
   }
   @if (loss) {
     <div class="loss">{{'loss' | translate}}</div>
   }
+  @if (surrendered) {
+    <div class="surrender-label">{{'Fight ended by surrender' | translate}}</div>
+  }
+  <div class="state">
+    {{ death ? ('Death' | translate) : ('Alive' | translate) }}
+  </div>
+  <div class="rating-row">
+    <span>{{'RatingChange' | translate}}:</span>
+    <span [ngClass]="ratingChange > 0 ? 'win' : (ratingChange < 0 ? 'loss' : 'neutral')">
+      {{ ratingChange > 0 ? '+' : '' }}{{ratingChange}}
+    </span>
+  </div>
+  <button type="button" class="ok-btn" (click)="onConfirm()">OK</button>
+</div>

@@ -182,7 +182,7 @@
   <image xlink:href="../../assets/prot.png" x="-86" y="1" height="50px" width="50px" transform="scale(-1.2, 1.2)"/>
 </svg>
 
-<img #boss src="../../assets/bidju/{{bossId}}.png" class="boss"/>
+<img #boss [attr.src]="bossImageSrc" (error)="onBossImageError()" class="boss"/>
 
 <img #animal
      src="../../assets/{{animalName.toLowerCase()}}"

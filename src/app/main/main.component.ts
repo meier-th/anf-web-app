@@ -1,5 +1,6 @@
 import {Component, HostListener, OnDestroy, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {AuthComponent} from '../auth/auth.component';
@@ -12,6 +13,7 @@ import {TranslatePipe} from '../services/translate.pipe';
 import {AuthApiService} from '../core/api/auth-api.service';
 import {SessionStore} from '../core/state/session.store';
 import {WebsocketGatewayService} from '../core/realtime/websocket-gateway.service';
+import {ApiConfigService} from '../core/config/api-config.service';
 
 @Component({
   selector: 'app-main',
@@ -23,6 +25,7 @@ import {WebsocketGatewayService} from '../core/realtime/websocket-gateway.servic
 export class MainComponent implements OnInit, OnDestroy {
   constructor(public router: Router, private dialogService: DialogService,
               private cookieService: CookieService, private authApi: AuthApiService,
+              private http: HttpClient, private apiConfig: ApiConfigService,
               public messageService: MessageService, private fightService: FightService,
               private confirmationService: ConfirmationService,
               private translate: TranslateService, private pipe: TranslatePipe,
@@ -168,6 +171,63 @@ export class MainComponent implements OnInit, OnDestroy {
         that.dialog?.close();
       });
     });
+  }
+
+  isFightRoute(): boolean {
+    return this.router.url.startsWith('/fight/');
+  }
+
+  onPrimaryAction(): void {
+    if (!this.isFightRoute()) {
+      this.router.navigateByUrl('main');
+      return;
+    }
+    this.confirmSurrender();
+  }
+
+  private confirmSurrender(): void {
+    this.confirmationService.confirm({
+      header: this.pipe.transform('Surrender'),
+      message: this.pipe.transform('Confirm surrender?'),
+      acceptLabel: this.pipe.transform('Confirm'),
+      rejectLabel: this.pipe.transform('Cancel'),
+      accept: () => this.surrenderCurrentFight()
+    });
+  }
+
+  private surrenderCurrentFight(): void {
+    const fightUuid = this.getCurrentFightUuid();
+    if (!fightUuid) {
+      this.messageService.add({
+        severity: 'error',
+        summary: this.pipe.transform('Error'),
+        detail: this.pipe.transform('Fight not found')
+      });
+      return;
+    }
+    this.http.post(this.apiConfig.buildUrl('/fight/surrender'), null, {
+      withCredentials: true,
+      params: new HttpParams().append('fightUuid', fightUuid)
+    }).subscribe({
+      next: () => {
+        this.display = false;
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: this.pipe.transform('Error'),
+          detail: this.pipe.transform('Unable to surrender')
+        });
+      }
+    });
+  }
+
+  private getCurrentFightUuid(): string {
+    const segments = this.router.url.split('/').filter((segment) => segment.length > 0);
+    if (segments.length >= 3 && segments[0] === 'fight') {
+      return segments[2];
+    }
+    return this.fightService.id ?? '';
   }
 
   private startOnlineHeartbeat(): void {

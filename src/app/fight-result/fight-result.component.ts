@@ -1,4 +1,4 @@
-import { Component, OnInit} from '@angular/core';
+import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import { FightEndService} from '../services/fight-end.service';
 
 @Component({
@@ -9,9 +9,12 @@ import { FightEndService} from '../services/fight-end.service';
 })
 export class FightResultComponent implements OnInit {
 
-  victory: boolean;
-  loss: boolean;
-  death: boolean;
+  victory = false;
+  loss = false;
+  death = false;
+  ratingChange = 0;
+  surrendered = false;
+  @Output() confirm = new EventEmitter<void>();
 
   constructor(private serv: FightEndService) { }
 
@@ -19,6 +22,12 @@ export class FightResultComponent implements OnInit {
     this.victory = this.serv.victory;
     this.loss = this.serv.loss;
     this.death = this.serv.death;
+    this.ratingChange = this.serv.ratingChange ?? 0;
+    this.surrendered = this.serv.surrendered ?? false;
+  }
+
+  onConfirm() {
+    this.confirm.emit();
   }
 
 }

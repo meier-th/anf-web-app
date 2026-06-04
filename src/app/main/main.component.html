@@ -26,8 +26,8 @@
       </div>
     }
     @if (loggedIn && router.url !== '/main') {
-      <div class="pages" (click)="router.navigateByUrl('main')">
-        <p>{{'Game' | translate }}</p>
+      <div class="pages action-tab" [class.surrender-tab]="isFightRoute()" (click)="onPrimaryAction()">
+        <p>{{(isFightRoute() ? 'Surrender' : 'Game') | translate }}</p>
       </div>
     }
   </div>
@@ -67,8 +67,8 @@
     </div>
   }
   @if (loggedIn && router.url !== '/main') {
-    <div class="pages" (click)="router.navigateByUrl('main')">
-      <p>{{'Game' | translate }}</p>
+    <div class="pages action-tab" [class.surrender-tab]="isFightRoute()" (click)="onPrimaryAction()">
+      <p>{{(isFightRoute() ? 'Surrender' : 'Game') | translate }}</p>
     </div>
   }
 </div>
