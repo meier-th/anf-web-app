@@ -1,4 +1,9 @@
 <div id="fight">
+  <div id="announcement-stack">
+    @for (announcement of announcements; track announcement.id) {
+      <div class="attack-announcement">{{announcement.text}}</div>
+    }
+  </div>
   <div class="container">
     <p class="label">{{'Attacks'| translate}}: </p>
     <div id="attacks" [@turn]="current === parent.login ? 'enabled' : 'disabled'">
@@ -18,7 +23,6 @@
         <p id="current"></p>
         <p id="timer"></p>
       </div>
-    </div>
     <div id="fighters">
       <div class="ally">
         <template #alliesContainer></template>
@@ -30,5 +34,9 @@
     <div id="ground">
     </div>
   </div>
-  <img id="used" src="../../assets/elements/{{used}}.png"
-    [@attack]="kek ? 'use' : 'default'">
+  <div id="attack-log">
+    @for (event of attackEvents; track event) {
+      <p class="attack-event">{{event}}</p>
+    }
+  </div>
+</div>

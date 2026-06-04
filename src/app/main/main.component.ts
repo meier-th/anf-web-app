@@ -144,11 +144,28 @@ export class MainComponent implements OnInit, OnDestroy {
       });
       that.stompClient.subscribe('/user/start', (response) => {
         const message = response.body;
-        const id = message.substring(message.indexOf(':') + 1);
+        const parts = message.split(':');
+        let mode = that.fightService.type;
+        let id = '';
+        if (parts.length >= 3) {
+          mode = parts[0];
+          id = parts[2];
+        } else if (parts.length === 2) {
+          id = parts[1];
+        } else {
+          id = message;
+        }
+        if (mode) {
+          const normalized = mode.toLowerCase();
+          that.fightService.type = normalized.includes('pvp') ? 'pvp' : 'pve';
+        } else {
+          that.fightService.type = 'pvp';
+        }
+        that.fightService.valuesSet = true;
         that.fightService.id = id;
         console.log('Fight started: ' + message);
         that.router.navigateByUrl('fight/' + that.fightService.type + '/' + id);
-        that.dialog.close();
+        that.dialog?.close();
       });
     });
   }

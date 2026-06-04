@@ -41,7 +41,8 @@ export class UsersListComponent implements OnInit {
               dt.forEach(usr => {
                 var usrdt = new Userdata();
                 usrdt.user = usr;
-                if (usr.roles.map(role => role.role).includes('ADMIN'))  {
+                const roles = usr.roles ?? [];
+                if (roles.map(role => role.role).includes('ADMIN'))  {
                   usrdt.admin = true;
                   usrdt.notAdmin = false;
                 } else {
@@ -73,7 +74,8 @@ export class UsersListComponent implements OnInit {
                       this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true})
                         .subscribe(usr => {
                           this.viewer = usr;
-                          if (this.viewer.roles.map(role => role.role).includes('ADMIN')) 
+                          const viewerRoles = this.viewer.roles ?? [];
+                          if (viewerRoles.map(role => role.role).includes('ADMIN')) 
                             this.adminView = true;
                             this.initializeWebSockets();
                           tempUsrs.forEach(ud => {

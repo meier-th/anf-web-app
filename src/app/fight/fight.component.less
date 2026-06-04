@@ -7,7 +7,7 @@
   #ground {
     position: fixed;
     height: 120px;
-    bottom: 0;
+    bottom: 86px;
     //background: linear-gradient(0deg, #d45c00, #f8bc22);
     background-image: url("../../assets/ground.png");
     background-size: cover;
@@ -34,7 +34,7 @@
 
 #fighters {
   position: absolute;
-  bottom: 40px;
+  bottom: 110px;
   width: 95%;
   height: 150px;
   margin-left: auto;
@@ -120,14 +120,51 @@
   }
 }
 
-#used {
-  position: absolute;
-  opacity: 0;
-  width: 15%;
-  height: auto;
-  top: 20%;
-  left: 42.5%;
-  z-index: 15;
+#attack-log {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 8px;
+  max-height: 74px;
+  overflow-y: auto;
+  background: rgba(22, 25, 40, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+  padding: 6px 10px;
+  z-index: 4;
+}
+
+.attack-event {
+  margin: 2px 0;
+  font-size: 12px;
+  color: #f2f6ff;
+}
+
+#announcement-stack {
+  position: fixed;
+  top: @header-height + 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.attack-announcement {
+  min-width: 460px;
+  max-width: 78vw;
+  padding: 14px 22px;
+  border-radius: 14px;
+  color: #fff;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(135deg, rgba(119, 54, 255, 0.95), rgba(30, 170, 234, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
 #summon {

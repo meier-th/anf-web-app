@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
-import {HttpClient, HttpParams} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
+import {defer, Observable} from 'rxjs';
 import {ApiConfigService} from '../config/api-config.service';
 
 export interface SessionCheckResponse {
@@ -19,6 +19,13 @@ export interface RegisterRequest {
 export class AuthApiService {
   constructor(private http: HttpClient, private apiConfig: ApiConfigService) {}
 
+  private ensureSecureAuthTransport() {
+    const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    if (window.location.protocol !== 'https:' && !isLocalhost) {
+      throw new Error('Credentials can only be sent over HTTPS.');
+    }
+  }
+
   checkCookies(): Observable<SessionCheckResponse> {
     return this.http.get<SessionCheckResponse>(this.apiConfig.buildUrl('/checkCookies'), {
       withCredentials: true
@@ -26,17 +33,25 @@ export class AuthApiService {
   }
 
   login(username: string, password: string): Observable<unknown> {
-    return this.http.post(this.apiConfig.buildUrl('/login'), null, {
-      withCredentials: true,
-      observe: 'response',
-      params: new HttpParams().append('username', username).append('password', password)
+    return defer(() => {
+      this.ensureSecureAuthTransport();
+
+      const body = new HttpParams().set('username', username).set('password', password).toString();
+      return this.http.post(this.apiConfig.buildUrl('/login'), body, {
+        withCredentials: true,
+        observe: 'response',
+        headers: new HttpHeaders({'Content-Type': 'application/x-www-form-urlencoded'})
+      });
     });
   }
 
   register(payload: RegisterRequest): Observable<unknown> {
-    return this.http.post(this.apiConfig.buildUrl('/registration'), payload, {
-      withCredentials: true,
-      observe: 'response'
+    return defer(() => {
+      this.ensureSecureAuthTransport();
+      return this.http.post(this.apiConfig.buildUrl('/registration'), payload, {
+        withCredentials: true,
+        observe: 'response'
+      });
     });
   }
 

@@ -98,8 +98,9 @@ export class ChatComponent implements OnInit {
     this.messages.push(msg);
     this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true}).subscribe(data => {
       this.user = data;
-      this.user.roles.forEach(role => console.log(role));
-      if (this.user.roles.map(role => role.role).includes('ADMIN')) {
+      const roles = this.user.roles ?? [];
+      roles.forEach(role => console.log(role));
+      if (roles.map(role => role.role).includes('ADMIN')) {
         this.admin = true;
       }
     });

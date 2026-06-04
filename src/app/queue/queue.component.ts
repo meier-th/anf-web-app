@@ -1,6 +1,6 @@
 import {Component, Injector, OnDestroy, OnInit, Optional} from '@angular/core';
 import {AreaService} from '../services/area/area.service';
-import {HttpClient, HttpParams} from '@angular/common/http';
+import {HttpClient, HttpErrorResponse, HttpParams} from '@angular/common/http';
 import {CookieService} from 'ngx-cookie-service';
 import {FightService} from '../services/fight/fight.service';
 import {MainComponent} from '../main/main.component';
@@ -111,11 +111,22 @@ export class QueueComponent implements OnInit, OnDestroy {
     const request = this.isLeader
       ? this.http.delete(this.apiConfig.buildUrl(`/fight/lobbies/${lobbyToLeave}`), {withCredentials: true})
       : this.http.post(this.apiConfig.buildUrl(`/fight/lobbies/${lobbyToLeave}/leave`), null, {withCredentials: true});
-    request.subscribe(() => {
-      this.clearCurrentLobbyState();
-      if (this.isPvpLobbyMode) {
-        this.statusMessage = 'Select a lobby to join, create your own, or use a code.';
-        this.loadOpenLobbies();
+    request.subscribe({
+      next: () => {
+        this.clearCurrentLobbyState();
+        if (this.isPvpLobbyMode) {
+          this.statusMessage = 'Select a lobby to join, create your own, or use a code.';
+          this.loadOpenLobbies();
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        if (error.status === 404) {
+          this.clearCurrentLobbyState();
+          if (this.isPvpLobbyMode) {
+            this.statusMessage = 'Select a lobby to join, create your own, or use a code.';
+            this.loadOpenLobbies();
+          }
+        }
       }
     });
   }
@@ -201,12 +212,23 @@ export class QueueComponent implements OnInit, OnDestroy {
       leader: string;
       players: string[];
     }>(this.apiConfig.buildUrl(`/fight/lobbies/${this.lobbyUuid}`), {withCredentials: true})
-      .subscribe((lobby) => {
-        this.players = lobby.players ?? [];
-        this.isLeader = lobby.leader === this.username;
-        this.disabled = !(this.isLeader && this.players.length >= this.expectedPlayers);
-        this.statusMessage = this.buildStatusMessage();
-        this.loadOpenLobbies();
+      .subscribe({
+        next: (lobby) => {
+          this.players = lobby.players ?? [];
+          this.isLeader = lobby.leader === this.username;
+          this.disabled = !(this.isLeader && this.players.length >= this.expectedPlayers);
+          this.statusMessage = this.buildStatusMessage();
+          this.loadOpenLobbies();
+        },
+        error: (error: HttpErrorResponse) => {
+          if (error.status === 404) {
+            this.started = true;
+            if (this.pollLobbyId) {
+              clearInterval(this.pollLobbyId);
+              this.pollLobbyId = null;
+            }
+          }
+        }
       });
   }
 
@@ -264,18 +286,22 @@ export class QueueComponent implements OnInit, OnDestroy {
       clearInterval(this.pollLobbyId);
       this.pollLobbyId = null;
     }
-    if (!this.lobbyUuid || this.started) {
+    if (!this.lobbyUuid || this.started || this.parent.router.url.startsWith('/fight/')) {
       return;
     }
     if (this.isLeader) {
       this.http.delete(this.apiConfig.buildUrl(`/fight/lobbies/${this.lobbyUuid}`), {
         withCredentials: true
-      }).subscribe();
+      }).subscribe({
+        error: (_error: HttpErrorResponse) => {}
+      });
       return;
     }
     this.http.post(this.apiConfig.buildUrl(`/fight/lobbies/${this.lobbyUuid}/leave`), null, {
       withCredentials: true
-    }).subscribe();
+    }).subscribe({
+      error: (_error: HttpErrorResponse) => {}
+    });
   }
 
   private clearCurrentLobbyState(): void {

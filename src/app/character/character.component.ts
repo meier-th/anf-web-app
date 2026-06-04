@@ -1,4 +1,4 @@
-import {Component, ComponentRef, ElementRef, OnInit, ViewChild, ViewContainerRef} from '@angular/core';
+import {AfterViewInit, Component, ComponentRef, ElementRef, OnInit, ViewChild, ViewContainerRef} from '@angular/core';
 import {User} from '../classes/user';
 
 @Component({
@@ -7,15 +7,16 @@ import {User} from '../classes/user';
   templateUrl: './character.component.html',
   styleUrls: ['./character.component.less']
 })
-export class CharacterComponent implements OnInit {
+export class CharacterComponent implements OnInit, AfterViewInit {
 
   @ViewChild('stats') stats: ElementRef;
   @ViewChild('male') male: ElementRef;
   @ViewChild('female') female: ElementRef;
   @ViewChild('boss') boss: ElementRef;
   @ViewChild('animal') animal: ElementRef;
-  private _bossId = 1;
-  private _animalName = ' ';
+  private _bossId = 0;
+  private _animalName = '';
+  private viewReady = false;
 
   get animalName(): string {
     return this._animalName;
@@ -23,16 +24,12 @@ export class CharacterComponent implements OnInit {
 
   set animalName(value: string) {
     this._animalName = value + '.png';
-    if (value === 'Дядя Бафомет') {
-      this._animalName = 'bath.png';
-    } else if (value === 'Тётя Срака') {
-      this._animalName = 'tot.svg';
+    if (value === 'Uncle Baphomet') {
+      this._animalName = 'uncle-baphomet.png';
+    } else if (value === 'Auntie Ass') {
+      this._animalName = 'aunt-ass.png';
     }
-    (<HTMLElement>this.male.nativeElement).style.display = 'none';
-    (<HTMLElement>this.female.nativeElement).style.display = 'none';
-    (<HTMLImageElement>this.animal.nativeElement).style.display = 'block';
-    (<HTMLImageElement>this.animal.nativeElement).style.height = '200px';
-    (<HTMLImageElement>this.animal.nativeElement).style.width = 'auto';
+    this.applyVariantVisibility();
   }
 
   get bossId(): number {
@@ -41,17 +38,51 @@ export class CharacterComponent implements OnInit {
 
   set bossId(value: number) {
     this._bossId = value;
-    (<HTMLElement>this.male.nativeElement).style.display = 'none';
-    (<HTMLElement>this.female.nativeElement).style.display = 'none';
-    (<HTMLImageElement>this.boss.nativeElement).style.display = 'block';
-    (<HTMLImageElement>this.boss.nativeElement).style.height = '20%';
-    (<HTMLImageElement>this.boss.nativeElement).style.width = 'auto';
+    this.applyVariantVisibility();
   }
 
   constructor() {
   }
 
   ngOnInit() {
+  }
+
+  ngAfterViewInit() {
+    this.viewReady = true;
+    this.applyVariantVisibility();
+  }
+
+  private applyVariantVisibility() {
+    if (!this.viewReady || !this.male || !this.female || !this.boss || !this.animal) {
+      return;
+    }
+
+    const male = this.male.nativeElement as HTMLElement;
+    const female = this.female.nativeElement as HTMLElement;
+    const boss = this.boss.nativeElement as HTMLImageElement;
+    const animal = this.animal.nativeElement as HTMLImageElement;
+
+    male.style.display = 'block';
+    female.style.display = 'none';
+    boss.style.display = 'none';
+    animal.style.display = 'none';
+
+    if (this._animalName.trim() !== '') {
+      male.style.display = 'none';
+      female.style.display = 'none';
+      animal.style.display = 'block';
+      animal.style.height = '200px';
+      animal.style.width = 'auto';
+      return;
+    }
+
+    if (this._bossId > 0) {
+      male.style.display = 'none';
+      female.style.display = 'none';
+      boss.style.display = 'block';
+      boss.style.height = '20%';
+      boss.style.width = 'auto';
+    }
   }
 
 }
