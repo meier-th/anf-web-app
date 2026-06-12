@@ -6,6 +6,10 @@ import {HttpClient} from '@angular/common/http';
 import {User} from '../classes/user';
 import {ApiConfigService} from '../core/config/api-config.service';
 
+type PendingChatMessage = {
+  text: string;
+};
+
 @Component({
   selector: 'app-chat',
   standalone: false,
@@ -21,7 +25,7 @@ export class ChatComponent implements OnInit {
   private stompClient;
   stompConnected = false;
   private connecting = false;
-  private pendingMessages: string[] = [];
+  private pendingMessages: PendingChatMessage[] = [];
   input = '';
   asSystem: boolean = false;
   admin: boolean = false;
@@ -70,17 +74,28 @@ export class ChatComponent implements OnInit {
       return;
     }
 
-    if (!this.user && !(this.admin && this.asSystem)) {
+    if (!this.user) {
       return;
     }
 
-    let txt = `${this.user?.login}: ${normalizedInput}`;
     if (this.admin && this.asSystem) {
-      txt = `SYSTEM: ${normalizedInput}`;
+      this.http.post(this.apiConfig.buildUrl('/admin/chat'), normalizedInput, {
+        withCredentials: true,
+        responseType: 'text'
+      }).subscribe({
+        next: () => {
+          this.input = '';
+        },
+        error: () => {
+          this.messages.push(new ChatMessage('SYSTEM', 'Failed to send system message.'));
+        }
+      });
+      return;
     }
+    const txt = `${this.user.login}: ${normalizedInput}`;
 
     if (!this.stompClient || !this.stompConnected || !this.stompClient.connected) {
-      this.pendingMessages.push(txt);
+      this.pendingMessages.push({text: txt});
       this.messages.push(new ChatMessage('SYSTEM', 'Connecting to chat... your message will be sent automatically.'));
       this.initializeWebSocketConnection();
       this.input = '';
@@ -98,12 +113,20 @@ export class ChatComponent implements OnInit {
     this.messages.push(msg);
     this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true}).subscribe(data => {
       this.user = data;
-      const roles = this.user.roles ?? [];
-      roles.forEach(role => console.log(role));
-      if (roles.map(role => role.role).includes('ADMIN')) {
-        this.admin = true;
-      }
     });
+    this.http.get<{ admin: boolean }>(this.apiConfig.buildUrl('/profile/isAdmin'), {withCredentials: true})
+      .subscribe({
+        next: (data) => {
+          this.admin = !!data?.admin;
+          if (!this.admin) {
+            this.asSystem = false;
+          }
+        },
+        error: () => {
+          this.admin = false;
+          this.asSystem = false;
+        }
+      });
   }
 
   private flushPendingMessages(): void {
@@ -112,8 +135,8 @@ export class ChatComponent implements OnInit {
     }
     while (this.pendingMessages.length > 0) {
       const queuedMessage = this.pendingMessages.shift();
-      if (queuedMessage) {
-        this.stompClient.send('/app/send/message', {}, queuedMessage);
+      if (queuedMessage?.text) {
+        this.stompClient.send('/app/send/message', {}, queuedMessage.text);
       }
     }
   }

@@ -98,6 +98,10 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.endServ.death = false;
+    this.endServ.loss = false;
+    this.endServ.victory = false;
+    this.endServ.surrendered = false;
     if (!this.fightService.valuesSet) {
       const segments = this.parent.router.url.split('/').filter((segment) => segment.length > 0);
       this.type = segments[1] ?? '';
@@ -647,7 +651,14 @@ export class FightComponent implements OnInit, OnDestroy {
         .append('fightUuid', this.id)
         .append('timedOutAttacker', this.current)
     }).subscribe({
-      error: () => {
+      error: (error) => {
+        if (error?.status === 404) {
+          // Fight can disappear immediately after completion; stop timeout retries.
+          clearInterval(this.timer);
+          this.current = '';
+          this.timeoutReported = true;
+          return;
+        }
         this.timeoutReported = false;
       }
     });
@@ -680,7 +691,28 @@ export class FightComponent implements OnInit, OnDestroy {
   private resolveRatingChangeAndShowResult() {
     if ((this.type ?? '').toLowerCase() !== 'pvp') {
       this.endServ.ratingChange = 0;
-      this.showFightResult = true;
+      this.http.get<any[]>(this.apiConfig.buildUrl('/profile/pvehistory'), {withCredentials: true})
+        .subscribe({
+          next: (history) => {
+            const latestResult = `${history?.[0]?.result ?? ''}`.toLowerCase();
+            if (latestResult === 'win') {
+              this.endServ.victory = true;
+              this.endServ.loss = false;
+              this.endServ.death = false;
+            } else if (latestResult === 'died') {
+              this.endServ.victory = false;
+              this.endServ.loss = false;
+              this.endServ.death = true;
+            } else if (latestResult === 'loss') {
+              this.endServ.victory = false;
+              this.endServ.loss = true;
+            }
+            this.showFightResult = true;
+          },
+          error: () => {
+            this.showFightResult = true;
+          }
+        });
       return;
     }
     this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true})

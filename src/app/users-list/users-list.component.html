@@ -7,6 +7,9 @@
         <div class="user-head">
           <div class="user-name-line">
             <label class="username">{{userdata.user.login}}</label>
+            @if (userdata.admin) {
+              <label class="admin-badge">admin</label>
+            }
             @if (userdata.friend) {
               <label class="friend inline-friend">{{'Friend' | translate}}</label>
             }
@@ -37,13 +40,8 @@
           @if (userdata.noRelations) {
             <p-button class="neutral user-action-button" label="{{'Add friend' | translate}}" (onClick)='sendRequest(userdata)'></p-button>
           }
-          @if (adminView) {
-            <label class="adminPanel">
-              {{userdata.admin ? ('Admin' | translate) : ('User' | translate) }}
-              @if (userdata.notAdmin) {
-                <p-button class="acceptRequest user-action-button" label="{{'Grant admin role' | translate}}" (onClick)='grantAdmin(userdata)'></p-button>
-              }
-            </label>
+          @if (adminView && userdata.notAdmin) {
+            <p-button class="acceptRequest user-action-button" label="make admin" (onClick)='grantAdmin(userdata)'></p-button>
           }
         </div>
       </li>

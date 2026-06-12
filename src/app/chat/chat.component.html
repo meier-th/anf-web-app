@@ -19,7 +19,7 @@
   </div>
   @if (admin) {
     <div id="admin-toggle">
-      <label id="lbl">{{asSystem? ('Send as system' | translate) : ('Send as user' | translate) }}</label>
+      <label id="lbl">{{'Send as system' | translate}}</label>
       <input type="checkbox" [(ngModel)]="asSystem">
     </div>
   }

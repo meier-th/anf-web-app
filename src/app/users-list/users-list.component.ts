@@ -24,7 +24,7 @@ export class UsersListComponent implements OnInit {
   usersList: Userdata[];
   viewer: User;
   private stompClient;
-  private adminView: boolean = false;
+  adminView: boolean = false;
   private dialog: DynamicDialogRef;
   unreadByUser: {[login: string]: number} = {};
   private activeChatLogin: string | null = null;
@@ -41,14 +41,8 @@ export class UsersListComponent implements OnInit {
               dt.forEach(usr => {
                 var usrdt = new Userdata();
                 usrdt.user = usr;
-                const roles = usr.roles ?? [];
-                if (roles.map(role => role.role).includes('ADMIN'))  {
-                  usrdt.admin = true;
-                  usrdt.notAdmin = false;
-                } else {
-                  usrdt.admin = false;
-                  usrdt.notAdmin = true;
-                }
+                usrdt.admin = false;
+                usrdt.notAdmin = true;
                 usrdt.friend = false;
                 usrdt.requested = false;
                 usrdt.requesting = false;
@@ -74,10 +68,16 @@ export class UsersListComponent implements OnInit {
                       this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true})
                         .subscribe(usr => {
                           this.viewer = usr;
-                          const viewerRoles = this.viewer.roles ?? [];
-                          if (viewerRoles.map(role => role.role).includes('ADMIN')) 
-                            this.adminView = true;
-                            this.initializeWebSockets();
+                          this.http.get<{admin: boolean}>(this.apiConfig.buildUrl('/profile/isAdmin'), {withCredentials: true})
+                            .subscribe({
+                              next: (data) => {
+                                this.adminView = !!data?.admin;
+                              },
+                              error: () => {
+                                this.adminView = false;
+                              }
+                            });
+                          this.initializeWebSockets();
                           tempUsrs.forEach(ud => {
                             if (ud.user.login === this.viewer.login)
                               tempUsrs.splice(tempUsrs.indexOf(ud), 1);
@@ -103,8 +103,22 @@ export class UsersListComponent implements OnInit {
                                       ud.user.offline = true;
                                     }
                                   });
-                                  this.usersList = tempUsrs;
-                                  this.loadUnreadMessageCounts();
+                                  this.http.get<string[]>(this.apiConfig.buildUrl('/users/admins'), {withCredentials: true})
+                                    .subscribe({
+                                      next: (admins) => {
+                                        const adminSet = new Set(admins ?? []);
+                                        tempUsrs.forEach((ud) => {
+                                          ud.admin = adminSet.has(ud.user.login);
+                                          ud.notAdmin = !ud.admin;
+                                        });
+                                        this.usersList = tempUsrs;
+                                        this.loadUnreadMessageCounts();
+                                      },
+                                      error: () => {
+                                        this.usersList = tempUsrs;
+                                        this.loadUnreadMessageCounts();
+                                      }
+                                    });
                                 });
                             });
                         });
@@ -304,10 +318,12 @@ export class UsersListComponent implements OnInit {
       new HttpHeaders (
       {   
           "Content-Type": "application/x-www-form-urlencoded"
-      }), 
-    withCredentials: true }).subscribe( msg => {});
-    ud.admin = true;
-    ud.notAdmin = false;
+      }),
+    withCredentials: true,
+    responseType: 'text' }).subscribe(() => {
+      ud.admin = true;
+      ud.notAdmin = false;
+    });
   }
 
   private parseOnlineEvent(body: string): { user: string; type: string } | null {
