@@ -53,6 +53,18 @@ type AttackAnnouncement = {
   ]
 })
 export class FightComponent implements OnInit, OnDestroy {
+  private static readonly SUMMON_LEVEL_TWO_THRESHOLD = 10;
+  private readonly summonAnimalPreviewByRace: {
+    [race: string]: {
+      tier1: string;
+      tier2: string;
+    };
+  } = {
+    veseliba: {tier1: 'vertet', tier2: 'ubele'},
+    bojajumus: {tier1: 'lauva', tier2: 'lusis'},
+    lidzsvaru: {tier1: 'erglis', tier2: 'lapsa'},
+    bugurt: {tier1: 'aunt-ass', tier2: 'uncle-baphomet'}
+  };
   allies: User[] = [];
   enemies: User[] = [];
   boss: Boss;
@@ -90,6 +102,7 @@ export class FightComponent implements OnInit, OnDestroy {
   debugLines: string[] = [];
   showDebugPanel = false;
   private pvpCurrentUserIsBackendSecond = false;
+  private useSummonIconFallback = false;
 
   constructor(private router: Router, private transl: TranslatePipe,
               private fightService: FightService,
@@ -525,6 +538,7 @@ export class FightComponent implements OnInit, OnDestroy {
           data.animals2 = tmpAnimals;
         }
         this.allies = [data.fighters1];
+        this.useSummonIconFallback = false;
         this.summonEnabled = this.summonEnabled && this.allies[0].character.animalRace != null;
         this.enemies = [data.fighters2];
         [data.fighters1, data.fighters2].forEach((fighter) => {
@@ -571,6 +585,7 @@ export class FightComponent implements OnInit, OnDestroy {
       }) => {
         this.setTimer(data.currentName, data.timeLeft);
         this.allies = data.fighters1;
+        this.useSummonIconFallback = false;
         this.allies.forEach((fighter) => {
           if (fighter?.login) {
             const maxHp = this.readNumber(fighter?.character, 'maxHp', 'maxHP', 'hpAmount');
@@ -747,23 +762,7 @@ export class FightComponent implements OnInit, OnDestroy {
     if (this.current !== this.parent.login) {
       return;
     }
-    const self: User = this.allies.find(all => all.login === this.parent.login);
-    if (this.selectedSpell === 'Air Strike' &&
-      self.character.currentChakra <
-      (70 + 10 * self.character.spellsKnown
-        .find(sh => sh.spellUse.name === 'Air Strike').spellLevel) ||
-      this.selectedSpell === 'Fire Strike' &&
-      self.character.currentChakra <
-      (40 + 5 * self.character.spellsKnown
-        .find(sh => sh.spellUse.name === 'Fire Strike').spellLevel) ||
-      this.selectedSpell === 'Water Strike' &&
-      self.character.currentChakra <
-      (20 + 4 * self.character.spellsKnown
-        .find(sh => sh.spellUse.name === 'Water Strike').spellLevel) ||
-      this.selectedSpell === 'Earth Strike' &&
-      self.character.currentChakra <
-      (12 + 3 * self.character.spellsKnown
-        .find(sh => sh.spellUse.name === 'Earth Strike').spellLevel)) {
+    if (this.isSkillDisabled(this.selectedSpell)) {
       this.selectedSpell = 'Physical attack';
     }
     this.http.post(this.apiConfig.buildUrl('/fight/attack'), null, {
@@ -796,6 +795,7 @@ export class FightComponent implements OnInit, OnDestroy {
         const side2 = data.fighters2;
         [side1, side2].forEach((participant) => {
           if (participant?.login) {
+            this.syncLocalFighterFromPayload(participant);
             this.applyUserBars(participant.login, this.userHpPercent(participant), this.userChakraPercent(participant));
           }
         });
@@ -821,6 +821,7 @@ export class FightComponent implements OnInit, OnDestroy {
       } else {
         const self = (data.fighters1 ?? []).find((it) => it.login === this.parent.login);
         if (self?.login) {
+          this.syncLocalFighterFromPayload(self);
           this.applyUserBars(self.login, this.userHpPercent(self), this.userChakraPercent(self));
         }
         if (data.boss && this.statsElements[data.boss.numberOfTails]) {
@@ -840,6 +841,8 @@ export class FightComponent implements OnInit, OnDestroy {
         return;
       }
       console.error(error);
+    }, () => {
+      this.ensureSelectedSpellIsAvailable();
     });
   }
 
@@ -855,26 +858,30 @@ export class FightComponent implements OnInit, OnDestroy {
     });
   }
 
+  get summonButtonSrc(): string {
+    if (this.useSummonIconFallback) {
+      return '../../assets/summon.png';
+    }
+    const race = (this.resolveLocalSummoner()?.character?.animalRace ?? '').trim().toLowerCase();
+    const animalByRace = this.summonAnimalPreviewByRace[race];
+    if (!animalByRace) {
+      return '../../assets/summon.png';
+    }
+    const level = this.resolveLocalSummonerLevel();
+    const animalImage = level >= FightComponent.SUMMON_LEVEL_TWO_THRESHOLD
+      ? animalByRace.tier2
+      : animalByRace.tier1;
+    return `../../assets/${animalImage}.png`;
+  }
+
+  onSummonButtonImageError() {
+    this.useSummonIconFallback = true;
+  }
+
   selectSpell(event: MouseEvent) {
     if (this.current === this.parent.login) {
       const selectedSpell = (event.target as HTMLElement | null)?.id ?? 'Physical attack';
-      const self: User = this.allies.find(all => all.login === this.parent.login);
-      if (selectedSpell === 'Air Strike' &&
-        self.character.currentChakra <
-        (70 + 10 * self.character.spellsKnown
-          .find(sh => sh.spellUse.name === 'Air Strike').spellLevel) ||
-        selectedSpell === 'Fire Strike' &&
-        self.character.currentChakra <
-        (40 + 5 * self.character.spellsKnown
-          .find(sh => sh.spellUse.name === 'Fire Strike').spellLevel) ||
-        selectedSpell === 'Water Strike' &&
-        self.character.currentChakra <
-        (20 + 4 * self.character.spellsKnown
-          .find(sh => sh.spellUse.name === 'Water Strike').spellLevel) ||
-        selectedSpell === 'Earth Strike' &&
-        self.character.currentChakra <
-        (12 + 3 * self.character.spellsKnown
-          .find(sh => sh.spellUse.name === 'Earth Strike').spellLevel)) {
+      if (this.isSkillDisabled(selectedSpell)) {
         alert(this.transl.transform('Not enough chakra'));
         this.selectedSpell = 'Physical attack';
       } else {
@@ -1395,6 +1402,49 @@ export class FightComponent implements OnInit, OnDestroy {
     return [...this.allies, ...this.enemies].find((it) => it?.login === login);
   }
 
+  private resolveLocalSummoner(): User | undefined {
+    return this.allies.find((ally) => ally?.login === this.parent.login) ?? this.allies[0];
+  }
+
+  private resolveLocalSummonerLevel(): number {
+    const localSummoner = this.resolveLocalSummoner();
+    return this.readNumber(localSummoner?.stats, 'level')
+      ?? this.readNumber(localSummoner, 'level')
+      ?? 1;
+  }
+
+  getSkillChakraCost(skill: string): number {
+    if ((skill ?? '').toLowerCase() === 'physical attack') {
+      return 0;
+    }
+    const self = this.resolveLocalSummoner();
+    const handling = self?.character?.spellsKnown?.find((spellHandling) => spellHandling?.spellUse?.name === skill);
+    if (!handling?.spellUse) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+    const baseConsumption = this.readNumber(handling.spellUse, 'baseChakraConsumption') ?? 0;
+    const perLevelConsumption = this.readNumber(handling.spellUse, 'chakraConsumptionPerLevel') ?? 0;
+    return Math.max(0, baseConsumption - handling.spellLevel * perLevelConsumption);
+  }
+
+  isSkillDisabled(skill: string): boolean {
+    if ((skill ?? '').toLowerCase() === 'physical attack') {
+      return false;
+    }
+    const self = this.resolveLocalSummoner();
+    const currentChakra = this.readNumber(self?.character, 'currentChakra', 'currentchakra', 'chakra') ?? 0;
+    return currentChakra < this.getSkillChakraCost(skill);
+  }
+
+  private ensureSelectedSpellIsAvailable() {
+    if ((this.selectedSpell ?? '').toLowerCase() === 'physical attack') {
+      return;
+    }
+    if (this.isSkillDisabled(this.selectedSpell)) {
+      this.selectedSpell = 'Physical attack';
+    }
+  }
+
   private animalHpPercent(animal: any): number | undefined {
     const current = this.firstNonNegative(
       this.readNumber(animal, 'currentHP', 'currentHp', 'hp'),
@@ -1498,6 +1548,26 @@ export class FightComponent implements OnInit, OnDestroy {
         this.setChakraPercent(stats, chakra);
       }
     });
+    this.ensureSelectedSpellIsAvailable();
+  }
+
+  private syncLocalFighterFromPayload(participant: any) {
+    if (!participant?.login) {
+      return;
+    }
+    const local = [...this.allies, ...this.enemies].find((user) => user?.login === participant.login);
+    if (!local?.character) {
+      return;
+    }
+    const payloadCharacter = participant.character ?? {};
+    const payloadCurrentHp = this.readNumber(payloadCharacter, 'currentHP', 'currentHp', 'hp');
+    const payloadCurrentChakra = this.readNumber(payloadCharacter, 'currentChakra', 'currentchakra', 'chakra');
+    if (payloadCurrentHp !== undefined) {
+      local.character.currentHP = Math.max(0, payloadCurrentHp);
+    }
+    if (payloadCurrentChakra !== undefined) {
+      local.character.currentChakra = Math.max(0, payloadCurrentChakra);
+    }
   }
 
   setAppearance(element: HTMLElement, user: User) {

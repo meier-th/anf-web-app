@@ -303,7 +303,8 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
       rating: 0,
       experience: 0,
       level: 1,
-      upgradePoints: 0
+      upgradePoints: 0,
+      spellPoints: 0
     };
   }
 

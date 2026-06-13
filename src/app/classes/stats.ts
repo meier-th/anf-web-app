@@ -8,4 +8,5 @@ export class Stats {
   experience: number;
   level: number;
   upgradePoints: number;
+  spellPoints: number;
 }

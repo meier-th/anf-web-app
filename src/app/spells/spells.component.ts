@@ -2,6 +2,7 @@ import { Component, OnInit, Optional } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import {User} from '../classes/user';
 import { Spell } from '../classes/spell';
+import {SpellHandling} from '../classes/spell-handling';
 import {ApiConfigService} from '../core/config/api-config.service';
 import {Router} from '@angular/router';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
@@ -15,6 +16,7 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
 export class SpellsComponent implements OnInit {
 
   user: User | null = null;
+  spellKnowledges: SpellHandling[] = [];
   loaded = false;
   earthHandling = 0;
   waterHandling = 0;
@@ -33,12 +35,20 @@ export class SpellsComponent implements OnInit {
     this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true})
       .subscribe(data => {
         this.user = data;
-        this.earthHandling = this.getHandlingLevel('Earth Strike');
-        this.waterHandling = this.getHandlingLevel('Water Strike');
-        this.fireHandling = this.getHandlingLevel('Fire Strike');
-        this.airHandling = this.getHandlingLevel('Air Strike');
-        this.freePoints = this.user.stats?.upgradePoints ?? 0;
-        this.loaded = true;
+        this.freePoints = this.user.stats?.spellPoints ?? 0;
+        this.http.get<SpellHandling[]>(this.apiConfig.buildUrl('/fight/spell/my/all'), {withCredentials: true})
+          .subscribe({
+            next: (spellKnowledges) => {
+              this.spellKnowledges = spellKnowledges ?? [];
+              this.syncHandlingLevels();
+              this.loaded = true;
+            },
+            error: () => {
+              this.spellKnowledges = [];
+              this.syncHandlingLevels();
+              this.loaded = true;
+            }
+          });
       }, () => {
         this.router.navigateByUrl('start');
       });
@@ -49,7 +59,7 @@ export class SpellsComponent implements OnInit {
     if (this.freePoints <= 0) {
       return;
     }
-    this.http.post<string>(this.apiConfig.buildUrl('/fight/spell/my'),
+    this.http.post(this.apiConfig.buildUrl('/fight/spell/my'),
     new HttpParams().set('spellname', spell),
       {
         headers:
@@ -57,19 +67,20 @@ export class SpellsComponent implements OnInit {
             {
               'Content-Type': 'application/x-www-form-urlencoded'
             }),
-        withCredentials: true
+        withCredentials: true,
+        responseType: 'text' as const
       }).subscribe(() => {
+      if (spell === 'Earth Strike') {
+        this.earthHandling++;
+      } else if (spell === 'Water Strike') {
+        this.waterHandling++;
+      } else if (spell === 'Fire Strike') {
+        this.fireHandling++;
+      } else {
+        this.airHandling++;
+      }
+      this.freePoints = Math.max(0, this.freePoints - 1);
     });
-    if (spell === 'Earth Strike') {
-      this.earthHandling++;
-    } else if (spell === 'Water Strike') {
-      this.waterHandling++;
-         } else if (spell === 'Fire Strike') {
-      this.fireHandling++;
-         } else {
-      this.airHandling++;
-         }
-    this.freePoints = Math.max(0, this.freePoints - 1);
   }
 
   get userLevel(): number {
@@ -77,8 +88,15 @@ export class SpellsComponent implements OnInit {
   }
 
   private getHandlingLevel(spellName: string): number {
-    const spellHandling = this.user?.character?.spellsKnown?.find(sh => sh.spellUse?.name === spellName);
+    const spellHandling = this.spellKnowledges.find(sh => sh.spellUse?.name === spellName);
     return spellHandling?.spellLevel ?? 0;
+  }
+
+  private syncHandlingLevels(): void {
+    this.earthHandling = this.getHandlingLevel('Earth Strike');
+    this.waterHandling = this.getHandlingLevel('Water Strike');
+    this.fireHandling = this.getHandlingLevel('Fire Strike');
+    this.airHandling = this.getHandlingLevel('Air Strike');
   }
 
   close(): void {

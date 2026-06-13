@@ -9,15 +9,25 @@
     <div id="attacks" [@turn]="current === parent.login ? 'enabled' : 'disabled'">
       @for (skill of skills; track skill) {
         <div class="attack">
-          <div (click)="selectSpell($event)" pTooltip="{{map[skill]}}">
+          <div
+            (click)="selectSpell($event)"
+            pTooltip="{{map[skill]}}"
+            [class.attack-disabled]="isSkillDisabled(skill)"
+            [class.attack-selected]="selectedSpell === skill">
             <img id="{{skill}}"
+              [class.attack-icon-disabled]="isSkillDisabled(skill)"
               src="../../assets/elements/{{skill.substring(0, skill.indexOf(' ')).toLowerCase()}}.png">
             </div>
           </div>
         }
       </div>
       @if (summonEnabled) {
-        <img id="summon" src="../../assets/summon.png" (click)="summon()"/>
+        <img
+          id="summon"
+          [src]="summonButtonSrc"
+          alt="Summon animal"
+          (error)="onSummonButtonImageError()"
+          (click)="summon()"/>
       }
       <div id="turn">
         <p id="current"></p>
