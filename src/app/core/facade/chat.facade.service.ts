@@ -1,0 +1,155 @@
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {CompatClient, Stomp} from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import {ApiConfigService} from '../config/api-config.service';
+import {ChatMessage} from '../../classes/chat-message';
+import {User} from '../../classes/user';
+import {APP_MESSAGES, APP_TIMINGS} from '../constants/app.constants';
+
+type PendingChatMessage = {
+  text: string;
+};
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ChatFacadeService {
+  user: User | null = null;
+  messages: ChatMessage[] = [];
+  admin = false;
+  private asSystem = false;
+
+  private socketUrls: string[];
+  private socketUrlIndex = 0;
+  private stompClient: CompatClient | null = null;
+  private stompConnected = false;
+  private connecting = false;
+  private pendingMessages: PendingChatMessage[] = [];
+
+  constructor(private http: HttpClient, private apiConfig: ApiConfigService) {
+    this.socketUrls = this.buildSocketUrls();
+  }
+
+  setAsSystem(value: boolean): void {
+    this.asSystem = value;
+  }
+
+  getAsSystem(): boolean {
+    return this.asSystem;
+  }
+
+  init(): void {
+    this.initializeWebSocketConnection();
+    this.messages.push(new ChatMessage('SYSTEM', APP_MESSAGES.chatWelcome));
+    this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true}).subscribe((data) => {
+      this.user = data;
+    });
+    this.http.get<{ admin: boolean }>(this.apiConfig.buildUrl('/profile/isAdmin'), {withCredentials: true})
+      .subscribe({
+        next: (data) => {
+          this.admin = !!data?.admin;
+          if (!this.admin) {
+            this.asSystem = false;
+          }
+        },
+        error: () => {
+          this.admin = false;
+          this.asSystem = false;
+        }
+      });
+  }
+
+  dispose(): void {
+    if (this.stompClient?.connected) {
+      this.stompClient.disconnect(() => {});
+    }
+    this.stompClient = null;
+    this.stompConnected = false;
+    this.connecting = false;
+  }
+
+  send(input: string): string {
+    const normalizedInput = (input ?? '').trim();
+    if (!normalizedInput || !this.user) {
+      return input;
+    }
+
+    if (this.admin && this.asSystem) {
+      this.http.post(this.apiConfig.buildUrl('/admin/chat'), normalizedInput, {
+        withCredentials: true,
+        responseType: 'text'
+      }).subscribe({
+        next: () => {},
+        error: () => {
+          this.messages.push(new ChatMessage('SYSTEM', APP_MESSAGES.chatSystemSendFailed));
+        }
+      });
+      return '';
+    }
+
+    const txt = `${this.user.login}: ${normalizedInput}`;
+    if (!this.stompClient || !this.stompConnected || !this.stompClient.connected) {
+      this.pendingMessages.push({text: txt});
+      this.messages.push(new ChatMessage('SYSTEM', APP_MESSAGES.chatConnecting));
+      this.initializeWebSocketConnection();
+      return '';
+    }
+
+    this.stompClient.send('/app/send/message', {}, txt);
+    return '';
+  }
+
+  private initializeWebSocketConnection(): void {
+    if (this.connecting || this.stompConnected) {
+      return;
+    }
+    const socketUrl = this.socketUrls[this.socketUrlIndex] ?? this.socketUrls[0];
+    const ws = new SockJS(socketUrl);
+    this.stompClient = Stomp.over(ws);
+    this.stompConnected = false;
+    this.connecting = true;
+    this.stompClient.connect({}, () => {
+      this.stompConnected = true;
+      this.connecting = false;
+      this.stompClient?.subscribe('/chat', (message) => {
+        const str = message.body;
+        const i = str.indexOf(':');
+        if (i < 0) {
+          return;
+        }
+        const author = str.substring(0, i);
+        const msg = str.substring(i + 1, str.length);
+        this.messages.push(new ChatMessage(author, msg));
+      });
+      this.flushPendingMessages();
+    }, () => {
+      this.stompConnected = false;
+      this.connecting = false;
+      this.socketUrlIndex = (this.socketUrlIndex + 1) % this.socketUrls.length;
+      setTimeout(() => this.initializeWebSocketConnection(), APP_TIMINGS.chatReconnectMs);
+    });
+  }
+
+  private flushPendingMessages(): void {
+    if (!this.stompClient || !this.stompConnected || !this.stompClient.connected) {
+      return;
+    }
+    while (this.pendingMessages.length > 0) {
+      const queuedMessage = this.pendingMessages.shift();
+      if (queuedMessage?.text) {
+        this.stompClient.send('/app/send/message', {}, queuedMessage.text);
+      }
+    }
+  }
+
+  private buildSocketUrls(): string[] {
+    const candidates = [
+      this.apiConfig.buildUrl('/socket'),
+      '/socket',
+      `${window.location.protocol}//${window.location.host}/socket`,
+      'http://localhost:8080/socket'
+    ];
+    return Array.from(new Set(candidates));
+  }
+}

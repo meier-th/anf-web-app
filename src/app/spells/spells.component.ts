@@ -6,12 +6,15 @@ import {SpellHandling} from '../classes/spell-handling';
 import {ApiConfigService} from '../core/config/api-config.service';
 import {Router} from '@angular/router';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
+import { Bind } from 'primeng/bind';
+import { Button } from 'primeng/button';
+import { TranslatePipe } from '../services/translate.pipe';
 
 @Component({
-  selector: 'app-spells',
-  standalone: false,
-  templateUrl: './spells.component.html',
-  styleUrls: ['./spells.component.less']
+    selector: 'app-spells',
+    templateUrl: './spells.component.html',
+    styleUrls: ['./spells.component.less'],
+    imports: [Bind, Button, TranslatePipe]
 })
 export class SpellsComponent implements OnInit {
 

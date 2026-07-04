@@ -1,18 +1,26 @@
-import {AfterViewChecked, Component, Injector, OnInit} from '@angular/core';
-import {HttpClient, HttpErrorResponse, HttpParams} from '@angular/common/http';
+import {AfterViewChecked, Component, OnInit} from '@angular/core';
+import {HttpErrorResponse} from '@angular/common/http';
 import {CookieService} from 'ngx-cookie-service';
 import {switchMap} from 'rxjs/operators';
-import {MainComponent} from '../main/main.component';
 import {Appearance} from '../classes/appearance';
 import {TranslatePipe} from '../services/translate.pipe';
 import {AuthApiService} from '../core/api/auth-api.service';
 import {ApiConfigService} from '../core/config/api-config.service';
+import {MessageService} from 'primeng/api';
+import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {ProfileApiService} from '../core/api/profile-api.service';
+import {APP_MESSAGES} from '../core/constants/app.constants';
+import { FormsModule } from '@angular/forms';
+import { Bind } from 'primeng/bind';
+import { InputText } from 'primeng/inputtext';
+import { Button } from 'primeng/button';
+import { CharacterComponent } from '../character/character.component';
 
 @Component({
-  selector: 'app-auth',
-  standalone: false,
-  templateUrl: './auth.component.html',
-  styleUrls: ['./auth.component.less']
+    selector: 'app-auth',
+    templateUrl: './auth.component.html',
+    styleUrls: ['./auth.component.less'],
+    imports: [FormsModule, Bind, InputText, Button, CharacterComponent, TranslatePipe]
 })
 export class AuthComponent implements OnInit, AfterViewChecked {
 
@@ -20,14 +28,15 @@ export class AuthComponent implements OnInit, AfterViewChecked {
   username = '';
   firstPassword = '';
   secondPassword = '';
-  parent = this.injector.get(MainComponent);
   registration = false;
   appearance = new Appearance();
   gender = false;
   private customizationPreviewSynced = false;
 
-  constructor(private httpClient: HttpClient, private cookieService: CookieService, private injector: Injector,
-    private pipe: TranslatePipe, private authApi: AuthApiService, private apiConfig: ApiConfigService) {
+  constructor(private cookieService: CookieService,
+    private pipe: TranslatePipe, private authApi: AuthApiService, private apiConfig: ApiConfigService,
+    private messageService: MessageService, private dialogRef: DynamicDialogRef, private dialogConfig: DynamicDialogConfig,
+    private profileApi: ProfileApiService) {
   }
 
   ngOnInit() {
@@ -42,20 +51,31 @@ export class AuthComponent implements OnInit, AfterViewChecked {
 
   tryToLogin() {
     if (this.username.length < 6) {
-      this.parent.messageService.add({severity: 'error', summary: this.pipe.transform('Error'), detail: this.pipe.transform('Login is too short')});
+      this.messageService.add({
+        severity: 'error',
+        summary: this.pipe.transform(APP_MESSAGES.toastError),
+        detail: this.pipe.transform('Login is too short')
+      });
     } else if (this.firstPassword.length < 6) {
-      this.parent.messageService.add({severity: 'error', summary: this.pipe.transform('Error'), detail: this.pipe.transform('Password is too short')});
+      this.messageService.add({
+        severity: 'error',
+        summary: this.pipe.transform(APP_MESSAGES.toastError),
+        detail: this.pipe.transform('Password is too short')
+      });
     } else {
       this.authApi.login(this.username, this.firstPassword).subscribe((response) => {
-        console.log(response);
-        this.parent.login = this.username;
-        this.parent.loginSuccess();
         this.cookieService.set('username', this.username);
         this.cookieService.set('loggedIn', 'true');
+        const onLoginSuccess = this.dialogConfig.data?.onLoginSuccess as ((username: string) => void) | undefined;
+        if (onLoginSuccess) {
+          onLoginSuccess(this.username);
+        } else {
+          this.dialogRef.close();
+        }
       }, (error) => {
-        this.parent.messageService.add({
+        this.messageService.add({
           severity: 'error',
-          summary: this.pipe.transform('Error'),
+          summary: this.pipe.transform(APP_MESSAGES.toastError),
           detail: this.pipe.transform('Unauthorized')
         });
       });
@@ -64,11 +84,23 @@ export class AuthComponent implements OnInit, AfterViewChecked {
 
   tryToSignUp() {
     if (this.username.length < 6) {
-      this.parent.messageService.add({severity: 'error', summary: this.pipe.transform('Error'), detail: this.pipe.transform('Login is too short')});
+      this.messageService.add({
+        severity: 'error',
+        summary: this.pipe.transform(APP_MESSAGES.toastError),
+        detail: this.pipe.transform('Login is too short')
+      });
     } else if (this.firstPassword.length < 6) {
-      this.parent.messageService.add({severity: 'error', summary: this.pipe.transform('Error'), detail: this.pipe.transform('Password is too short')});
+      this.messageService.add({
+        severity: 'error',
+        summary: this.pipe.transform(APP_MESSAGES.toastError),
+        detail: this.pipe.transform('Password is too short')
+      });
     } else if (this.firstPassword !== this.secondPassword) {
-      this.parent.messageService.add({severity: 'error', summary: this.pipe.transform('Error'), detail: this.pipe.transform('Passwords are not the same')});
+      this.messageService.add({
+        severity: 'error',
+        summary: this.pipe.transform(APP_MESSAGES.toastError),
+        detail: this.pipe.transform('Passwords are not the same')
+      });
     } else {
       this.authApi.register({
         login: this.username,
@@ -81,18 +113,20 @@ export class AuthComponent implements OnInit, AfterViewChecked {
           this.customizationPreviewSynced = false;
           this.cookieService.set('username', this.username);
           this.cookieService.set('loggedIn', 'true');
-          this.parent.loggedIn = true;
-          this.parent.login = this.cookieService.get('username');
-          this.parent.messageService.add({
+          const onRegistrationSession = this.dialogConfig.data?.onRegistrationSession as ((username: string) => void) | undefined;
+          if (onRegistrationSession) {
+            onRegistrationSession(this.username);
+          }
+          this.messageService.add({
             severity: 'success',
             summary: this.pipe.transform('Almost done'),
             detail: this.pipe.transform('Now create your character')
           });
         },
         error: (error: HttpErrorResponse) => {
-          this.parent.messageService.add({
+          this.messageService.add({
             severity: 'error',
-            summary: this.pipe.transform('Error'),
+            summary: this.pipe.transform(APP_MESSAGES.toastError),
             detail: error.message
           });
         }
@@ -207,21 +241,22 @@ export class AuthComponent implements OnInit, AfterViewChecked {
   }
 
   sendAppearance() {
-    this.httpClient.post(this.apiConfig.buildUrl('/profile/character/appearance'), null,
-      {
-        withCredentials: true,
-        params: new HttpParams()
-          .append('gender', this.appearance.gender)
-          .append('hairColour', this.appearance.hairColour)
-          .append('skinColour', this.appearance.skinColour)
-          .append('clothesColour', this.appearance.clothesColour)
-      }).subscribe((response) => {
-      this.parent.dialog.close();
-      this.parent.messageService.add({severity: 'success', summary: this.pipe.transform('Success'), detail: this.pipe.transform('You are successfully registered')});
+    this.profileApi.saveAppearance({
+      gender: this.appearance.gender,
+      hairColour: this.appearance.hairColour,
+      skinColour: this.appearance.skinColour,
+      clothesColour: this.appearance.clothesColour
+    }).subscribe(() => {
+      this.dialogRef.close();
+      this.messageService.add({
+        severity: 'success',
+        summary: this.pipe.transform(APP_MESSAGES.toastSuccess),
+        detail: this.pipe.transform('You are successfully registered')
+      });
     }, (error: HttpErrorResponse) => {
-      this.parent.messageService.add({
+      this.messageService.add({
         severity: 'error',
-        summary: this.pipe.transform('Error'),
+        summary: this.pipe.transform(APP_MESSAGES.toastError),
         detail: error.message
       });
     });

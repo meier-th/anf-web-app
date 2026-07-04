@@ -1,51 +1,47 @@
-import {Component, Injector, OnInit} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {Message} from '../classes/message';
 import {User} from '../classes/user';
-import {MainComponent} from '../main/main.component';
-import {Stomp} from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import {animate, state, style, transition, trigger} from '@angular/animations';
-import {ApiConfigService} from '../core/config/api-config.service';
+import {MessageApiService} from '../core/api/message-api.service';
+import {SocialRealtimeService} from '../core/realtime/social-realtime.service';
+import {CompatClient} from '@stomp/stompjs';
+import {Router} from '@angular/router';
+import { TranslatePipe } from '../services/translate.pipe';
 
 @Component({
-  selector: 'app-messages',
-  standalone: false,
-  templateUrl: './messages.component.html',
-  styleUrls: ['./messages.component.less'],
-  animations: [
-    trigger('load', [
-      state('hidden', style({
-          bottom: '-20%',
-          display: 'none',
-          opacity: '0.3'
-        })),
-      state('default', style({})
-      ),
-      transition('hidden => default', [
-        animate('0.3s')
-      ])]
-    )
-  ]
+    selector: 'app-messages',
+    templateUrl: './messages.component.html',
+    styleUrls: ['./messages.component.less'],
+    animations: [
+        trigger('load', [
+            state('hidden', style({
+                bottom: '-20%',
+                display: 'none',
+                opacity: '0.3'
+            })),
+            state('default', style({})),
+            transition('hidden => default', [
+                animate('0.3s')
+            ])
+        ])
+    ],
+    imports: [TranslatePipe]
 })
-export class MessagesComponent implements OnInit {
+export class MessagesComponent implements OnInit, OnDestroy {
   user: User;
   inMessages: Message[];
   outMessages: Message[];
   dialogues: string[];
-  private stompClient;
-  parent = this.injector.get(MainComponent);
+  private stompClient: CompatClient;
   loaded = false;
 
-  constructor(private http: HttpClient, private injector: Injector, private apiConfig: ApiConfigService) {
+  constructor(private messageApi: MessageApiService, private socialRealtime: SocialRealtimeService,
+              private router: Router) {
   }
 
   ngOnInit() {
     this.dialogues = [];
-    // this.http.get<User>('http://localhost:8080/profile', {withCredentials: true})
-    //   .subscribe(data => this.user = data);
-    this.http.get<string[]>(this.apiConfig.buildUrl('/profile/dialogs'),
-      {withCredentials: true}).subscribe(data => {
+    this.messageApi.getDialogs().subscribe(data => {
       this.dialogues = data;
       this.loaded = true;
     });
@@ -53,28 +49,29 @@ export class MessagesComponent implements OnInit {
   }
 
   initializeWebSocketConnection() {
-    const ws = new SockJS(this.apiConfig.buildUrl('/socket'));
-    this.stompClient = Stomp.over(ws);
-    const that = this;
-    this.stompClient.connect({}, function (frame) {
-      that.stompClient.subscribe('/user/msg', (message) => {
-        const str = message.body;
+    this.stompClient = this.socialRealtime.connect((client) => {
+      this.socialRealtime.subscribeUserMessages(client, (str) => {
         const i = str.indexOf(':');
         const author = str.substring(0, i);
-        // var msg = str.substring(i+1, str.length);
-        // alert(msg);
         let exists = 0;
-        that.dialogues.forEach(dial => {
+        this.dialogues.forEach(dial => {
           if (dial === author) {
             exists = 1;
           }
         });
         if (exists === 0) {
-          that.dialogues.push(author);
+          this.dialogues.push(author);
         }
-        // console.log(message.body);
       });
     });
+  }
+
+  ngOnDestroy(): void {
+    this.socialRealtime.disconnect(this.stompClient);
+  }
+
+  openDialogue(dialogue: string): void {
+    this.router.navigateByUrl('dialogue/' + dialogue);
   }
 
 }

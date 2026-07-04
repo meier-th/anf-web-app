@@ -1,19 +1,20 @@
-import { Component, OnInit, Injector } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import {ProfilePageComponent} from '../profile-page/profile-page.component';
 import {ApiConfigService} from '../core/config/api-config.service';
+import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
+import { Bind } from 'primeng/bind';
+import { Button } from 'primeng/button';
+import { TranslatePipe } from '../services/translate.pipe';
 
 @Component({
-  selector: 'app-animal-race-choice',
-  standalone: false,
-  templateUrl: './animal-race-choice.component.html',
-  styleUrls: ['./animal-race-choice.component.less']
+    selector: 'app-animal-race-choice',
+    templateUrl: './animal-race-choice.component.html',
+    styleUrls: ['./animal-race-choice.component.less'],
+    imports: [Bind, Button, TranslatePipe]
 })
 export class AnimalRaceChoiceComponent implements OnInit {
-
-  private parent = this.injector.get(ProfilePageComponent);
-
-  constructor(private http: HttpClient, private injector: Injector, private apiConfig: ApiConfigService) { }
+  constructor(private http: HttpClient, private apiConfig: ApiConfigService,
+              private dialogRef: DynamicDialogRef, private dialogConfig: DynamicDialogConfig) { }
 
   ngOnInit() {
   }
@@ -33,9 +34,10 @@ export class AnimalRaceChoiceComponent implements OnInit {
         new HttpHeaders(
           {
             'Content-Type': 'application/x-www-form-urlencoded'
-          }), withCredentials: true}).subscribe(res => {
-            this.parent.user.character.animalRace = raceName;
-            this.parent.dialog.close();
+          }), withCredentials: true}).subscribe(() => {
+            const onSelected = this.dialogConfig.data?.onSelected as ((selectedRace: string) => void) | undefined;
+            onSelected?.(raceName);
+            this.dialogRef.close(raceName);
           });
   }
 

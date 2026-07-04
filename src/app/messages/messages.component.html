@@ -2,7 +2,7 @@
   <label id="header">{{'Dialogues' | translate }}</label><br>
   <ul class="list">
     @for (dialogue of dialogues; track dialogue) {
-      <li class="row" (click)="parent.router.navigateByUrl('dialogue/' + dialogue)">
+      <li class="row" (click)="openDialogue(dialogue)">
         {{'Interlocutor' | translate }}: {{dialogue}}
       </li>
     }

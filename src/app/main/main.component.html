@@ -49,7 +49,6 @@
       <p id="login">{{login}}</p>
     </div>
   }
-  <p-confirmDialog></p-confirmDialog>
   </div>
 }
 
@@ -100,8 +99,24 @@
     <p-button id="logout-button" label="{{'Log out' | translate }}" (click)="logout()"></p-button>
   }
 </div>
-<p-confirmDialog></p-confirmDialog>
 </div>
 <div id="content">
   <router-outlet></router-outlet>
 </div>
+
+@if (showSurrenderConfirm) {
+  <div class="surrender-modal-backdrop" (click)="cancelSurrenderConfirm()">
+    <div class="surrender-modal" (click)="$event.stopPropagation()">
+      <h3>{{'Surrender' | translate}}</h3>
+      <p>{{'Confirm surrender?' | translate}}</p>
+      <div class="surrender-actions">
+        <button type="button" class="surrender-cancel" (click)="cancelSurrenderConfirm()">
+          {{'Cancel' | translate}}
+        </button>
+        <button type="button" class="surrender-confirm" (click)="confirmSurrender()">
+          {{'Confirm' | translate}}
+        </button>
+      </div>
+    </div>
+  </div>
+}

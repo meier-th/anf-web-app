@@ -1,11 +1,13 @@
 import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import { FightEndService} from '../services/fight-end.service';
+import { NgClass } from '@angular/common';
+import { TranslatePipe } from '../services/translate.pipe';
 
 @Component({
-  selector: 'app-fight-result',
-  standalone: false,
-  templateUrl: './fight-result.component.html',
-  styleUrls: ['./fight-result.component.less']
+    selector: 'app-fight-result',
+    templateUrl: './fight-result.component.html',
+    styleUrls: ['./fight-result.component.less'],
+    imports: [NgClass, TranslatePipe]
 })
 export class FightResultComponent implements OnInit {
 

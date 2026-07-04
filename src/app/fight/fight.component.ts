@@ -2,7 +2,7 @@ import {
   AfterContentInit,
   Component,
   ComponentFactoryResolver,
-  ComponentRef, Injector, OnDestroy,
+  ComponentRef, OnDestroy,
   OnInit,
   ViewChild,
   ViewContainerRef
@@ -12,8 +12,7 @@ import {FightEndService} from '../services/fight-end.service';
 import {User} from '../classes/user';
 import {Boss} from '../classes/boss';
 import {CharacterComponent} from '../character/character.component';
-import {HttpClient, HttpParams} from '@angular/common/http';
-import {MainComponent} from '../main/main.component';
+import {HttpClient} from '@angular/common/http';
 import {Character} from '../classes/character';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 import SockJS from 'sockjs-client';
@@ -23,6 +22,13 @@ import {TranslateService} from '../services/translate.service';
 import {TranslatePipe} from '../services/translate.pipe';
 import {NinjaAnimal} from '../classes/ninja-animal';
 import {ApiConfigService} from '../core/config/api-config.service';
+import {SessionStore} from '../core/state/session.store';
+import {FightApiService} from '../core/api/fight-api.service';
+import {FightDomainService} from '../core/domain/fight-domain.service';
+import {APP_TIMINGS, FIGHT_CONSTANTS, FIGHT_MESSAGES, FIGHT_UI} from '../core/constants/app.constants';
+import {FightRenderService} from '../core/ui/fight-render.service';
+import { Tooltip } from 'primeng/tooltip';
+import { FightResultComponent } from '../fight-result/fight-result.component';
 
 type AttackAnnouncement = {
   id: number;
@@ -31,29 +37,28 @@ type AttackAnnouncement = {
 };
 
 @Component({
-  selector: 'app-fight',
-  standalone: false,
-  templateUrl: './fight.component.html',
-  styleUrls: ['./fight.component.less'],
-  animations: [
-    trigger('turn', [
-      state('disabled', style({
-        opacity: 0.3
-      })),
-      state('enabled', style({
-        opacity: 1
-      })),
-      transition('disabled => enabled', [
-        animate('0.2s')
-      ]),
-      transition('enabled => disabled', [
-        animate('0.3s')
-      ])
-    ])
-  ]
+    selector: 'app-fight',
+    templateUrl: './fight.component.html',
+    styleUrls: ['./fight.component.less'],
+    animations: [
+        trigger('turn', [
+            state('disabled', style({
+                opacity: 0.3
+            })),
+            state('enabled', style({
+                opacity: 1
+            })),
+            transition('disabled => enabled', [
+                animate('0.2s')
+            ]),
+            transition('enabled => disabled', [
+                animate('0.3s')
+            ])
+        ])
+    ],
+    imports: [Tooltip, FightResultComponent, TranslatePipe]
 })
 export class FightComponent implements OnInit, OnDestroy {
-  private static readonly SUMMON_LEVEL_TWO_THRESHOLD = 10;
   private readonly summonAnimalPreviewByRace: {
     [race: string]: {
       tier1: string;
@@ -76,12 +81,11 @@ export class FightComponent implements OnInit, OnDestroy {
   fightersElements: { [key: string]: HTMLElement } = {};
   statsElements: { [key: string]: HTMLElement } = {};
   skills: string[] = [];
-  parent = this.injector.get(MainComponent);
   loaded = false;
   type: string;
   private stompClient;
   id: string;
-  selectedSpell = 'Physical attack';
+  selectedSpell: string = FIGHT_CONSTANTS.defaultSkill;
   map: { [key: string]: string } = {};
   timer: ReturnType<typeof setInterval>;
   current: string;
@@ -104,10 +108,16 @@ export class FightComponent implements OnInit, OnDestroy {
   private pvpCurrentUserIsBackendSecond = false;
   private useSummonIconFallback = false;
 
+  get currentUsername(): string {
+    return this.sessionStore.username();
+  }
+
   constructor(private router: Router, private transl: TranslatePipe,
               private fightService: FightService,
               private resolver: ComponentFactoryResolver, private http: HttpClient,
-              private injector: Injector, private endServ: FightEndService, private apiConfig: ApiConfigService) {
+              private endServ: FightEndService, private apiConfig: ApiConfigService,
+              private sessionStore: SessionStore, private fightApi: FightApiService,
+              private fightDomain: FightDomainService, private fightRender: FightRenderService) {
   }
 
   ngOnInit() {
@@ -116,7 +126,7 @@ export class FightComponent implements OnInit, OnDestroy {
     this.endServ.victory = false;
     this.endServ.surrendered = false;
     if (!this.fightService.valuesSet) {
-      const segments = this.parent.router.url.split('/').filter((segment) => segment.length > 0);
+      const segments = this.router.url.split('/').filter((segment) => segment.length > 0);
       this.type = segments[1] ?? '';
       this.id = segments[2] ?? '';
     } else {
@@ -151,13 +161,12 @@ export class FightComponent implements OnInit, OnDestroy {
           that.scheduleAttackAnnouncement(fightState);
           that.appendAttackEvent(
             `${fightState.attacker} -> ${fightState.target}: ${fightState.damage} (${fightState.attackName})`);
-          that.setTimer(fightState.nextAttacker, 30200);
+          that.setTimer(fightState.nextAttacker, APP_TIMINGS.fightTurnWindowMs);
           if (that.isSurrenderState(fightState)) {
             that.handleSurrenderState(fightState);
             return;
           }
           that.animateAttackVisual(fightState.attacker, fightState.target, fightState.attackName);
-          console.log(fightState);
 
           // find attacker and target
           let attackerUser: User;
@@ -240,9 +249,7 @@ export class FightComponent implements OnInit, OnDestroy {
 
           // if deadly
           if (fightState.deadly) {
-            console.log('deadly');
             if (userIsTarget) {
-              console.log('target');
               if (targetUser) {
                 that.setUserDead(targetUser); // method for graphics
               }
@@ -285,13 +292,12 @@ export class FightComponent implements OnInit, OnDestroy {
           that.scheduleAttackAnnouncement(fightState);
           that.appendAttackEvent(
             `${fightState.attacker} -> ${fightState.target}: ${fightState.damage} (${fightState.attackName})`);
-          that.setTimer(fightState.nextAttacker, 30200);
+          that.setTimer(fightState.nextAttacker, APP_TIMINGS.fightTurnWindowMs);
           if (that.isSurrenderState(fightState)) {
             that.handleSurrenderState(fightState);
             return;
           }
           that.animateAttackVisual(fightState.attacker, fightState.target, fightState.attackName);
-          console.log(fightState);
 
           // find attacker and target
           let attackerUser: User;
@@ -364,8 +370,6 @@ export class FightComponent implements OnInit, OnDestroy {
               }
               that.applyUserBars(fightState.target, that.userHpPercent(targetUser), undefined);
             } else if (targetAnimal) {
-              console.log(fightState.target);
-              console.log(targetAnimal);
               try {
                 const hpPercent = that.applyDamageToAnimal(targetAnimal, fightState.damage);
                 that.applyAnimalBar(
@@ -392,7 +396,7 @@ export class FightComponent implements OnInit, OnDestroy {
                 that.finishFight(false, false, true); // you lost
               }
             } else {
-              if (that.died.includes(that.parent.login)) {
+          if (that.died.includes(that.sessionStore.username())) {
                 that.finishFight(true, false, false);
               } else {
                 that.finishFight(false, true, false);
@@ -404,7 +408,7 @@ export class FightComponent implements OnInit, OnDestroy {
       }
       that.stompClient.subscribe('/user/switch', (response) => {
         that.pushDebug(`WS switch next=${response.body}`);
-        that.setTimer(response.body, 30000);
+        that.setTimer(response.body, APP_TIMINGS.fightTurnTickMs);
         that.syncBarsFromServer();
       });
       that.stompClient.subscribe('/user/summon', (response) => {
@@ -441,7 +445,6 @@ export class FightComponent implements OnInit, OnDestroy {
   init() {
     const factory = this.resolver.resolveComponentFactory(CharacterComponent);
     let character: ComponentRef<CharacterComponent>;
-    console.log(this.allies);
     for (let i = 0; i < this.allies.length; i++) {
       character = this.alliesContainer.createComponent(factory);
       const genderId = this.allies[this.allies.length - i - 1].character.appearance.gender === 'FEMALE' ? 1 : 0;
@@ -454,10 +457,8 @@ export class FightComponent implements OnInit, OnDestroy {
       }
       this.fightersElements[this.allies[this.allies.length - i - 1].login] = element;
       element.style.display = 'block';
-      console.log(element);
       this.setPosition(element, i);
       hidden.style.display = 'none';
-      console.log(hidden);
       stats.dataset.login = this.allies[this.allies.length - i - 1].login;
       this.statsElements[this.allies[this.allies.length - i - 1].login] = stats;
       this.setPosition(stats, i, 125);
@@ -485,7 +486,6 @@ export class FightComponent implements OnInit, OnDestroy {
       element.style.display = 'block';
       element.classList.add('enemy');
       hidden.style.display = 'none';
-      console.log(element);
       this.setAppearance(element, this.enemies[0]);
       stats.dataset.login = this.enemies[0].login;
       this.statsElements[this.enemies[0].login] = stats;
@@ -518,17 +518,14 @@ export class FightComponent implements OnInit, OnDestroy {
 
   getFightInfo(type: string) {
     if (type.toLowerCase() === 'pvp') {
-      this.http.post(this.apiConfig.buildUrl('/fight/info'), null, {
-        withCredentials: true,
-        params: new HttpParams().append('fightUuid', this.id)
-      }).subscribe((data: {
+      this.fightApi.getInfo<{
         id: number, type: string,
         fighters1: User, fighters2: User,
         animals1: NinjaAnimal[], animals2: NinjaAnimal[],
         currentName: string, timeLeft: number
-      }) => {
+      }>(this.id).subscribe((data) => {
         this.setTimer(data.currentName, data.timeLeft);
-        this.pvpCurrentUserIsBackendSecond = data.fighters2.login === this.parent.login;
+        this.pvpCurrentUserIsBackendSecond = data.fighters2.login === this.sessionStore.username();
         if (this.pvpCurrentUserIsBackendSecond) {
           const tmp = data.fighters1;
           data.fighters1 = data.fighters2;
@@ -555,10 +552,9 @@ export class FightComponent implements OnInit, OnDestroy {
         });
         this.animals1 = data.animals1 ?? [];
         this.animals2 = data.animals2 ?? [];
-        console.log(data);
         const spells = data.fighters1.character.spellsKnown;
-        this.skills.push('Physical attack');
-        this.map['Physical attack'] = 'Physical attack\n' +
+        this.skills.push(FIGHT_CONSTANTS.defaultSkill);
+        this.map[FIGHT_CONSTANTS.defaultSkill] = `${FIGHT_CONSTANTS.defaultSkill}\n` +
           this.transl.transform('Damage') + ': ' + data.fighters1.character.physicalDamage +
           '\n' + this.transl.transform('Chakra') + ': 0';
         spells.forEach((it) => {
@@ -576,13 +572,10 @@ export class FightComponent implements OnInit, OnDestroy {
         this.summonEnabled = false;
       }
     } else {
-      this.http.post(this.apiConfig.buildUrl('/fight/info'), null, {
-        withCredentials: true,
-        params: new HttpParams().append('fightUuid', this.id)
-      }).subscribe((data: {
+      this.fightApi.getInfo<{
         id: number, type: string, fighters1: User[], currentName: string, timeLeft: number,
         boss: Boss, animals1: NinjaAnimal[]
-      }) => {
+      }>(this.id).subscribe((data) => {
         this.setTimer(data.currentName, data.timeLeft);
         this.allies = data.fighters1;
         this.useSummonIconFallback = false;
@@ -599,12 +592,12 @@ export class FightComponent implements OnInit, OnDestroy {
           }
         });
         this.boss = data.boss;
-        const spells = data.fighters1.find(us => us.login === this.parent.login).character.spellsKnown;
-        this.skills.push('Physical attack');
-        this.map['Physical attack'] = 'Physical attack\n' +
+        const localFighter = data.fighters1.find((us) => us.login === this.sessionStore.username()) ?? data.fighters1[0];
+        const spells = localFighter?.character?.spellsKnown ?? [];
+        this.skills.push(FIGHT_CONSTANTS.defaultSkill);
+        this.map[FIGHT_CONSTANTS.defaultSkill] = `${FIGHT_CONSTANTS.defaultSkill}\n` +
           this.transl.transform('Damage') + ': ' +
-          data.fighters1.find(us => us.login === this.parent.login)
-            .character.physicalDamage + '\n' + this.transl.transform('Chakra') + ': 0';
+          (localFighter?.character?.physicalDamage ?? 0) + '\n' + this.transl.transform('Chakra') + ': 0';
         spells.forEach((it) => {
           this.skills.push(it.spellUse.name);
           this.map[it.spellUse.name] = it.spellUse.name +
@@ -617,7 +610,7 @@ export class FightComponent implements OnInit, OnDestroy {
         this.animals1 = data.animals1;
         for (let i = 0; i < data.animals1.length; i++) {
           this.drawAnimal(data.animals1[i], true);
-          if (data.animals1[i].summoner === this.parent.login) {
+          if (data.animals1[i].summoner === this.sessionStore.username()) {
             this.summonEnabled = false;
           }
         }
@@ -630,7 +623,7 @@ export class FightComponent implements OnInit, OnDestroy {
     this.timeoutReported = false;
     this.current = currentName;
     this.updateTargetCursor();
-    if (currentName === this.parent.login) {
+    if (currentName === this.sessionStore.username()) {
       currentName = this.transl.transform('Your turn!');
     } else {
       if (currentName === '') {
@@ -645,27 +638,22 @@ export class FightComponent implements OnInit, OnDestroy {
       currentElement.innerText = currentName;
     }
     if (timerElement) {
-      timerElement.innerText = Math.max(0, Math.ceil(timeLeft / 1000)).toString();
+      timerElement.innerText = Math.max(0, Math.ceil(timeLeft / FIGHT_UI.timerStepMs)).toString();
     }
     this.timer = setInterval(() => {
-      timeLeft = Math.max(0, timeLeft - 1000);
+      timeLeft = Math.max(0, timeLeft - FIGHT_UI.timerStepMs);
       if (timerElement) {
-        timerElement.innerText = Math.max(0, Math.ceil(timeLeft / 1000)).toString();
+        timerElement.innerText = Math.max(0, Math.ceil(timeLeft / FIGHT_UI.timerStepMs)).toString();
       }
       if (timeLeft === 0 && this.current && !this.timeoutReported) {
         this.timeoutReported = true;
         this.reportTurnTimeout();
       }
-    }, 1000);
+    }, FIGHT_UI.timerStepMs);
   }
 
   private reportTurnTimeout() {
-    this.http.post(this.apiConfig.buildUrl('/fight/timeout'), null, {
-      withCredentials: true,
-      params: new HttpParams()
-        .append('fightUuid', this.id)
-        .append('timedOutAttacker', this.current)
-    }).subscribe({
+    this.fightApi.reportTimeout(this.id, this.current).subscribe({
       error: (error) => {
         if (error?.status === 404) {
           // Fight can disappear immediately after completion; stop timeout retries.
@@ -691,12 +679,12 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   private isSurrenderState(fightState: { attackName?: string }): boolean {
-    return (fightState?.attackName ?? '').toLowerCase() === 'surrender';
+    return (fightState?.attackName ?? '').toLowerCase() === FIGHT_CONSTANTS.surrenderAttackName;
   }
 
   private handleSurrenderState(fightState: { attacker?: string }) {
     if ((this.type ?? '').toLowerCase() === 'pvp') {
-      const surrenderedBySelf = (fightState?.attacker ?? '') === this.parent.login;
+      const surrenderedBySelf = (fightState?.attacker ?? '') === this.sessionStore.username();
       this.finishFight(false, !surrenderedBySelf, surrenderedBySelf, true);
       return;
     }
@@ -759,19 +747,13 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   attack(enemy: string): any {
-    if (this.current !== this.parent.login) {
+    if (this.current !== this.sessionStore.username()) {
       return;
     }
     if (this.isSkillDisabled(this.selectedSpell)) {
-      this.selectedSpell = 'Physical attack';
+      this.selectedSpell = FIGHT_CONSTANTS.defaultSkill;
     }
-    this.http.post(this.apiConfig.buildUrl('/fight/attack'), null, {
-      withCredentials: true,
-      params: new HttpParams()
-        .append('fightUuid', this.id)
-        .append('enemy', enemy)
-        .append('spellName', this.selectedSpell)
-    }).subscribe((data: {
+    this.fightApi.attack(this.id, enemy, this.selectedSpell).subscribe((data: {
       damage: number,
       chakra: number,
       deadly: boolean,
@@ -786,10 +768,7 @@ export class FightComponent implements OnInit, OnDestroy {
     if (this.fightEnded) {
       return;
     }
-    this.http.post(this.apiConfig.buildUrl('/fight/info'), null, {
-      withCredentials: true,
-      params: new HttpParams().append('fightUuid', this.id)
-    }).subscribe((data: any) => {
+    this.fightApi.getInfo<any>(this.id).subscribe((data: any) => {
       if ((this.type ?? '').toLowerCase() === 'pvp') {
         const side1 = data.fighters1;
         const side2 = data.fighters2;
@@ -819,7 +798,7 @@ export class FightComponent implements OnInit, OnDestroy {
           this.applyAnimalBar(animal.name, hpPercent, side2IsAlly);
         });
       } else {
-        const self = (data.fighters1 ?? []).find((it) => it.login === this.parent.login);
+        const self = (data.fighters1 ?? []).find((it) => it.login === this.sessionStore.username());
         if (self?.login) {
           this.syncLocalFighterFromPayload(self);
           this.applyUserBars(self.login, this.userHpPercent(self), this.userChakraPercent(self));
@@ -847,13 +826,7 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   summon() {
-    this.http.post(this.apiConfig.buildUrl('/fight/summon' +
-      this.type.substring(0, 1).toUpperCase() +
-      this.type.substring(1).toLowerCase()), null, {
-      withCredentials: true,
-      params: new HttpParams().append('fightUuid', this.id)
-    }).subscribe((response: NinjaAnimal) => {
-      console.log(response);
+    this.fightApi.summon(this.type, this.id).subscribe((response: NinjaAnimal) => {
       this.summonEnabled = false;
     });
   }
@@ -868,7 +841,7 @@ export class FightComponent implements OnInit, OnDestroy {
       return '../../assets/summon.png';
     }
     const level = this.resolveLocalSummonerLevel();
-    const animalImage = level >= FightComponent.SUMMON_LEVEL_TWO_THRESHOLD
+    const animalImage = level >= FIGHT_CONSTANTS.summonLevelTwoThreshold
       ? animalByRace.tier2
       : animalByRace.tier1;
     return `../../assets/${animalImage}.png`;
@@ -879,28 +852,28 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   selectSpell(event: MouseEvent) {
-    if (this.current === this.parent.login) {
-      const selectedSpell = (event.target as HTMLElement | null)?.id ?? 'Physical attack';
+    if (this.current === this.sessionStore.username()) {
+      const selectedSpell = (event.target as HTMLElement | null)?.id ?? FIGHT_CONSTANTS.defaultSkill;
       if (this.isSkillDisabled(selectedSpell)) {
-        alert(this.transl.transform('Not enough chakra'));
-        this.selectedSpell = 'Physical attack';
+        alert(this.transl.transform(FIGHT_MESSAGES.notEnoughChakra));
+        this.selectedSpell = FIGHT_CONSTANTS.defaultSkill;
       } else {
         this.selectedSpell = selectedSpell;
       }
       this.updateTargetCursor();
     } else {
-      alert(this.transl.transform('Not your turn!'));
+      alert(this.transl.transform(FIGHT_MESSAGES.notYourTurn));
     }
 
   }
 
   private updateTargetCursor() {
-    const cursor = this.current === this.parent.login ? 'crosshair' : 'default';
+    const cursor = this.current === this.sessionStore.username() ? 'crosshair' : 'default';
     const targets = document.querySelectorAll('.enemy-target');
     targets.forEach((target) => {
       const targetElement = target as HTMLElement;
       targetElement.style.cursor = cursor;
-      if (this.current === this.parent.login && !this.fightEnded && !this.showFightResult) {
+      if (this.current === this.sessionStore.username() && !this.fightEnded && !this.showFightResult) {
         targetElement.classList.add('target-glow');
         targetElement.style.filter = 'drop-shadow(0 0 10px rgba(255, 222, 89, 0.95))';
       } else {
@@ -908,7 +881,7 @@ export class FightComponent implements OnInit, OnDestroy {
         targetElement.style.filter = '';
       }
     });
-    this.pushDebug(`Target highlight active=${this.current === this.parent.login} count=${targets.length}`);
+    this.pushDebug(`Target highlight active=${this.current === this.sessionStore.username()} count=${targets.length}`);
   }
 
   private animateAttackVisual(attackerId: string, targetId: string, attackName?: string) {
@@ -933,14 +906,14 @@ export class FightComponent implements OnInit, OnDestroy {
     projectile.className = 'projectile-rock';
     const projectileStyle = this.projectileStyleForAttack(attackName);
     projectile.style.position = 'fixed';
-    projectile.style.width = '16px';
-    projectile.style.height = '16px';
+    projectile.style.width = `${FIGHT_UI.projectileSizePx}px`;
+    projectile.style.height = `${FIGHT_UI.projectileSizePx}px`;
     projectile.style.borderRadius = '50%';
     projectile.style.background = projectileStyle.background;
     projectile.style.border = '1px solid rgba(20, 20, 20, 0.8)';
     projectile.style.boxShadow = projectileStyle.boxShadow;
     projectile.style.transform = 'translate(-50%, -50%)';
-    projectile.style.transition = 'transform 0.2s linear';
+    projectile.style.transition = `transform ${FIGHT_UI.projectileDurationMs}ms linear`;
     projectile.style.zIndex = '1200';
     projectile.style.pointerEvents = 'none';
     projectile.style.left = `${startX}px`;
@@ -959,7 +932,7 @@ export class FightComponent implements OnInit, OnDestroy {
       this.blinkTargetOnImpact(targetEl);
     };
     projectile.addEventListener('transitionend', cleanup, {once: true});
-    setTimeout(cleanup, 260);
+    setTimeout(cleanup, FIGHT_UI.projectileCleanupMs);
   }
 
   private projectileStyleForAttack(attackName?: string): { background: string; boxShadow: string } {
@@ -1001,24 +974,13 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   private applyDamageToAnimal(animal: any, damage: number): number | undefined {
-    const current = this.firstNonNegative(
-      this.readNumber(animal, 'currentHP', 'currentHp', 'hp'),
-      this.findNumberDeep(animal, (path) => path.includes('current') && (path.includes('hp') || path.includes('health')))
-    );
-    const max = this.firstPositive(
-      this.readNumber(animal, 'maxHP', 'maxHp', 'hpAmount'),
-      this.findNumberDeep(animal, (path) => path.includes('max') && (path.includes('hp') || path.includes('health')))
-    );
-    if (current === undefined || max === undefined || max <= 0) {
+    const result = this.fightDomain.applyDamageToAnimal(animal, damage);
+    if (result.hpPercent === undefined || result.current === undefined || result.max === undefined || result.max <= 0 || result.next === undefined) {
       this.pushDebug(`Animal damage skipped (missing values) animal=${animal?.name ?? 'unknown'} dmg=${damage}`);
       return undefined;
     }
-    const next = Math.max(0, current - damage);
-    animal.currentHP = next;
-    animal.currentHp = next;
-    const percent = this.toPercent(next, max);
-    this.pushDebug(`Animal damage ${animal?.name ?? 'unknown'}: ${current}/${max} -> ${next}/${max} (${Math.round(percent ?? 0)}%)`);
-    return percent;
+    this.pushDebug(`Animal damage ${animal?.name ?? 'unknown'}: ${result.current}/${result.max} -> ${result.next}/${result.max} (${Math.round(result.hpPercent ?? 0)}%)`);
+    return result.hpPercent;
   }
 
   private blinkTargetOnImpact(targetEl: HTMLElement) {
@@ -1029,7 +991,7 @@ export class FightComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       targetEl.style.filter = previousFilter;
       targetEl.style.transition = previousTransition;
-    }, 160);
+    }, FIGHT_UI.impactFlashMs);
   }
 
   private resolveCombatantElement(id: string, preferAllyForAnimal?: boolean): HTMLElement | undefined {
@@ -1130,10 +1092,10 @@ export class FightComponent implements OnInit, OnDestroy {
     damage: number;
   }) {
     const text = `${fightState.attacker} attacked ${fightState.target} for ${fightState.damage} (${fightState.attackName})`;
-    const delay = this.isAnimalAttackAttacker(fightState.attacker) ? 500 : 0;
+    const delay = this.isAnimalAttackAttacker(fightState.attacker) ? FIGHT_UI.announcementDelayMs : 0;
     const delayTimer = setTimeout(() => {
       const id = ++this.announcementCounter;
-      const dismissTimer = setTimeout(() => this.dismissAnnouncement(id), 2000);
+      const dismissTimer = setTimeout(() => this.dismissAnnouncement(id), FIGHT_UI.announcementDurationMs);
       this.announcements.push({id, text, dismissTimer});
       this.pendingAnnouncementDelays = this.pendingAnnouncementDelays.filter((it) => it !== delayTimer);
     }, delay);
@@ -1172,8 +1134,8 @@ export class FightComponent implements OnInit, OnDestroy {
   private appendAttackEvent(eventText: string) {
     const time = new Date().toLocaleTimeString();
     this.attackEvents.unshift(`[${time}] ${eventText}`);
-    if (this.attackEvents.length > 8) {
-      this.attackEvents = this.attackEvents.slice(0, 8);
+    if (this.attackEvents.length > FIGHT_UI.maxAttackEvents) {
+      this.attackEvents = this.attackEvents.slice(0, FIGHT_UI.maxAttackEvents);
     }
   }
 
@@ -1214,66 +1176,19 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   setPosition(element: HTMLElement, i: number, margin = 0) {
-    element.style.position = 'absolute';
-    element.style.bottom = (margin + 40 * ((i + 1) % 2)) + 'px';
-    element.style.left = (80 * Math.round(i / 2) + 40 * ((i + 1) % 2)) + 'px';
+    this.fightRender.setPosition(element, i, margin);
   }
 
   setHPPercent(stats: HTMLElement, hp?: number) {
-    if (!Number.isFinite(hp)) {
-      return;
-    }
-    const hpEl = <HTMLElement>stats.getElementsByClassName('hp')[0];
-    if (!hpEl) {
-      return;
-    }
-    hpEl.style.width = hp + '%';
+    this.fightRender.setHPPercent(stats, hp);
   }
 
   setChakraPercent(stats: HTMLElement, mp?: number) {
-    if (!Number.isFinite(mp)) {
-      return;
-    }
-    const mpEl = <HTMLElement>stats.getElementsByClassName('mp')[0];
-    if (!mpEl) {
-      return;
-    }
-    mpEl.style.width = mp + '%';
+    this.fightRender.setChakraPercent(stats, mp);
   }
 
   private readNumber(source: any, ...keys: string[]): number | undefined {
-    if (!source) {
-      return undefined;
-    }
-    const normalize = (value: string) => value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-    const parseNumeric = (value: any): number | undefined => {
-      if (typeof value === 'number' && Number.isFinite(value)) {
-        return value;
-      }
-      if (typeof value === 'string' && value.trim().length > 0) {
-        const parsed = Number(value);
-        if (Number.isFinite(parsed)) {
-          return parsed;
-        }
-      }
-      return undefined;
-    };
-    for (const key of keys) {
-      const direct = parseNumeric(source[key]);
-      if (direct !== undefined) {
-        return direct;
-      }
-      const normalizedKey = normalize(key);
-      for (const [entryKey, entryValue] of Object.entries(source)) {
-        if (normalize(entryKey) === normalizedKey) {
-          const loose = parseNumeric(entryValue);
-          if (loose !== undefined) {
-            return loose;
-          }
-        }
-      }
-    }
-    return undefined;
+    return this.fightDomain.readNumber(source, ...keys);
   }
 
   private findNumberDeep(
@@ -1282,117 +1197,27 @@ export class FightComponent implements OnInit, OnDestroy {
     depth = 0,
     path = ''
   ): number | undefined {
-    if (source == null || depth > 3) {
-      return undefined;
-    }
-    if (typeof source === 'number' && Number.isFinite(source)) {
-      const normalizedPath = path.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-      return matcher(normalizedPath) ? source : undefined;
-    }
-    if (typeof source === 'string') {
-      const parsed = Number(source);
-      if (Number.isFinite(parsed)) {
-        const normalizedPath = path.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        return matcher(normalizedPath) ? parsed : undefined;
-      }
-      return undefined;
-    }
-    if (typeof source !== 'object') {
-      return undefined;
-    }
-    for (const [key, value] of Object.entries(source)) {
-      const nestedPath = path ? `${path}.${key}` : key;
-      const nested = this.findNumberDeep(value, matcher, depth + 1, nestedPath);
-      if (nested !== undefined) {
-        return nested;
-      }
-    }
-    return undefined;
+    return this.fightDomain.findNumberDeep(source, matcher, depth, path);
   }
 
   private toPercent(current?: number, max?: number): number | undefined {
-    if (current === undefined || max === undefined || max <= 0) {
-      return undefined;
-    }
-    return Math.max(0, Math.min(100, current / max * 100));
+    return this.fightDomain.toPercent(current, max);
   }
 
   private firstNonNegative(...values: Array<number | undefined>): number | undefined {
-    for (const value of values) {
-      if (value !== undefined && value >= 0) {
-        return value;
-      }
-    }
-    return undefined;
+    return this.fightDomain.firstNonNegative(...values);
   }
 
   private firstPositive(...values: Array<number | undefined>): number | undefined {
-    for (const value of values) {
-      if (value !== undefined && value > 0) {
-        return value;
-      }
-    }
-    return undefined;
+    return this.fightDomain.firstPositive(...values);
   }
 
   private userHpPercent(user: any): number | undefined {
-    const login = user?.login;
-    const source = user?.character ?? user?.gameCharacter ?? user;
-    const current = this.firstNonNegative(
-      this.readNumber(source, 'currentHP', 'currentHp', 'currentHpAmount', 'hp'),
-      this.findNumberDeep(source, (path) => path.includes('current') && (path.includes('hp') || path.includes('health'))),
-      this.readNumber(this.findLocalUserByLogin(login)?.character, 'currentHP', 'currentHp', 'hp')
-    );
-    const max = this.firstPositive(
-      this.readNumber(source, 'maxHp', 'maxHP', 'maxHpAmount', 'maxHPAmount', 'hpAmount'),
-      this.findNumberDeep(source, (path) => path.includes('max') && (path.includes('hp') || path.includes('health'))),
-      this.userMaxHp[login],
-      this.readNumber(this.findLocalUserByLogin(login)?.character, 'maxHp', 'maxHP', 'hpAmount')
-    );
-    if (login && current !== undefined) {
-      const observed = this.userMaxHp[login];
-      if (observed === undefined || current > observed) {
-        this.userMaxHp[login] = current;
-      }
-    }
-    const effectiveMax = this.firstPositive(max, this.userMaxHp[login], current);
-    const percent = this.toPercent(
-      current,
-      effectiveMax);
-    if (login && effectiveMax !== undefined && effectiveMax > 0) {
-      this.userMaxHp[login] = effectiveMax;
-    }
-    return percent;
+    return this.fightDomain.userHpPercent(user, this.userMaxHp, (login) => this.findLocalUserByLogin(login));
   }
 
   private userChakraPercent(user: any): number | undefined {
-    const login = user?.login;
-    const source = user?.character ?? user?.gameCharacter ?? user;
-    const current = this.firstNonNegative(
-      this.readNumber(source, 'currentChakra', 'currentchakra', 'currentChakraAmount', 'chakra'),
-      this.findNumberDeep(source, (path) => path.includes('current') && path.includes('chakra')),
-      this.readNumber(this.findLocalUserByLogin(login)?.character, 'currentChakra', 'currentchakra', 'chakra')
-    );
-    const max = this.firstPositive(
-      this.readNumber(source, 'maxChakra', 'maxchakra', 'maxChakraAmount', 'chakraAmount'),
-      this.findNumberDeep(source, (path) => path.includes('max') && path.includes('chakra')),
-      this.userMaxChakra[login],
-      this.readNumber(this.findLocalUserByLogin(login)?.character, 'maxChakra', 'maxchakra', 'chakraAmount')
-    );
-    if (login && current !== undefined) {
-      const observed = this.userMaxChakra[login];
-      if (observed === undefined || current > observed) {
-        this.userMaxChakra[login] = current;
-      }
-    }
-    const effectiveMax = this.firstPositive(max, this.userMaxChakra[login], current);
-    const percent = this.toPercent(
-      current,
-      effectiveMax);
-    if (login && effectiveMax !== undefined && effectiveMax > 0) {
-      this.userMaxChakra[login] = effectiveMax;
-    }
-    return percent;
+    return this.fightDomain.userChakraPercent(user, this.userMaxChakra, (login) => this.findLocalUserByLogin(login));
   }
 
   private findLocalUserByLogin(login: string | undefined): User | undefined {
@@ -1403,7 +1228,7 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   private resolveLocalSummoner(): User | undefined {
-    return this.allies.find((ally) => ally?.login === this.parent.login) ?? this.allies[0];
+    return this.allies.find((ally) => ally?.login === this.sessionStore.username()) ?? this.allies[0];
   }
 
   private resolveLocalSummonerLevel(): number {
@@ -1414,50 +1239,26 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   getSkillChakraCost(skill: string): number {
-    if ((skill ?? '').toLowerCase() === 'physical attack') {
-      return 0;
-    }
     const self = this.resolveLocalSummoner();
-    const handling = self?.character?.spellsKnown?.find((spellHandling) => spellHandling?.spellUse?.name === skill);
-    if (!handling?.spellUse) {
-      return Number.MAX_SAFE_INTEGER;
-    }
-    const baseConsumption = this.readNumber(handling.spellUse, 'baseChakraConsumption') ?? 0;
-    const perLevelConsumption = this.readNumber(handling.spellUse, 'chakraConsumptionPerLevel') ?? 0;
-    return Math.max(0, baseConsumption - handling.spellLevel * perLevelConsumption);
+    return this.fightDomain.getSkillChakraCost(skill, self);
   }
 
   isSkillDisabled(skill: string): boolean {
-    if ((skill ?? '').toLowerCase() === 'physical attack') {
-      return false;
-    }
     const self = this.resolveLocalSummoner();
-    const currentChakra = this.readNumber(self?.character, 'currentChakra', 'currentchakra', 'chakra') ?? 0;
-    return currentChakra < this.getSkillChakraCost(skill);
+    return this.fightDomain.isSkillDisabled(skill, self);
   }
 
   private ensureSelectedSpellIsAvailable() {
-    if ((this.selectedSpell ?? '').toLowerCase() === 'physical attack') {
+    if ((this.selectedSpell ?? '').toLowerCase() === FIGHT_CONSTANTS.defaultSkill.toLowerCase()) {
       return;
     }
     if (this.isSkillDisabled(this.selectedSpell)) {
-      this.selectedSpell = 'Physical attack';
+      this.selectedSpell = FIGHT_CONSTANTS.defaultSkill;
     }
   }
 
   private animalHpPercent(animal: any): number | undefined {
-    const current = this.firstNonNegative(
-      this.readNumber(animal, 'currentHP', 'currentHp', 'hp'),
-      this.findNumberDeep(animal, (path) => path.includes('current') && (path.includes('hp') || path.includes('health')))
-    );
-    const max = this.firstPositive(
-      this.readNumber(animal, 'maxHP', 'maxHp', 'hpAmount'),
-      this.findNumberDeep(animal, (path) => path.includes('max') && (path.includes('hp') || path.includes('health')))
-    );
-    if (current !== undefined && max !== undefined && max > 0) {
-      return this.toPercent(current, max);
-    }
-    return undefined;
+    return this.fightDomain.animalHpPercent(animal);
   }
 
   private applyAnimalBar(tokenOrName: string, hp?: number, preferAlly?: boolean) {
@@ -1484,17 +1285,14 @@ export class FightComponent implements OnInit, OnDestroy {
       && (preferredSide ? (stats.dataset?.animalSide ?? '') === preferredSide : true));
     const anyMatches = domCandidates.filter((stats) => (stats.dataset?.animalKey ?? '') === animalKey);
     const fallbackStats = candidates.find((candidate) => !!candidate);
-    let targets: HTMLElement[] = [];
-    if (fallbackStats) {
-      targets = [fallbackStats];
-    } else if (preferAlly !== undefined) {
-      // Side is known: never write to opposite side.
-      targets = preferredMatches;
-    } else {
-      // Side unknown: pick at most one to avoid mirroring both bars.
-      const first = preferredMatches[0] ?? anyMatches[0];
-      targets = first ? [first] : [];
-    }
+    const targets: HTMLElement[] = fallbackStats
+      ? [fallbackStats]
+      : (preferAlly !== undefined
+          ? preferredMatches
+          : (() => {
+              const first = preferredMatches[0] ?? anyMatches[0];
+              return first ? [first] : [];
+            })());
     if (targets.length > 0) {
       targets.forEach((stats) => this.setHPPercent(stats, hp));
       this.pushDebug(
@@ -1511,8 +1309,8 @@ export class FightComponent implements OnInit, OnDestroy {
     }
     const time = new Date().toLocaleTimeString();
     this.debugLines.unshift(`[${time}] ${message}`);
-    if (this.debugLines.length > 24) {
-      this.debugLines = this.debugLines.slice(0, 24);
+    if (this.debugLines.length > FIGHT_UI.maxDebugLines) {
+      this.debugLines = this.debugLines.slice(0, FIGHT_UI.maxDebugLines);
     }
   }
 
@@ -1534,11 +1332,11 @@ export class FightComponent implements OnInit, OnDestroy {
       const nameEl = stats.getElementsByClassName('name')[0] as HTMLElement | undefined;
       return (nameEl?.innerText ?? '').trim() === (login ?? '').trim();
     });
-    const candidates = [...new Set<HTMLElement>([
+    const candidates = Array.from(new Set<HTMLElement>([
       ...matchedByLogin,
       ...matchedByLabel,
       this.statsElements[login]
-    ].filter(Boolean))];
+    ].filter(Boolean)));
 
     candidates.forEach((stats) => {
       if (hp !== undefined) {
@@ -1571,112 +1369,31 @@ export class FightComponent implements OnInit, OnDestroy {
   }
 
   setAppearance(element: HTMLElement, user: User) {
-    const hair = element.getElementsByClassName('hair');
-    for (let i = 0; i < hair.length; i++) {
-      (<HTMLElement>hair[i]).style.fill = this.chooseHair(user);
-      (<HTMLElement>hair[i]).style.stroke = this.chooseHair(user);
-    }
-    const skin = element.getElementsByClassName('skin');
-    for (let i = 0; i < skin.length; i++) {
-      (<HTMLElement>skin[i]).style.fill = this.chooseSkin(user);
-      (<HTMLElement>skin[i]).style.stroke = this.chooseSkin(user);
-    }
-    const clothes = element.getElementsByClassName('clothes');
-    for (let i = 0; i < clothes.length; i++) {
-      (<HTMLElement>clothes[i]).style.fill = this.chooseClothes(user);
-      (<HTMLElement>clothes[i]).style.stroke = this.chooseClothes(user);
-    }
-
-  }
-
-  chooseHair(user: User): string {
-    switch (user.character.appearance.hairColour) {
-      case 'YELLOW':
-        return '#DEAB7F';
-      case 'BROWN':
-        return '#A53900';
-      case 'BLACK':
-        return '#2D221C';
-    }
-  }
-
-  chooseSkin(user: User): string {
-    switch (user.character.appearance.skinColour) {
-      case 'BLACK':
-        return '#6E2B12';
-      case 'WHITE':
-        return '#EBCCAB';
-      case 'LATIN':
-        return '#C37C4D';
-      case 'DARK':
-        return '#934C1D';
-    }
-  }
-
-  chooseClothes(user: User): string {
-    switch (user.character.appearance.clothesColour) {
-      case 'RED':
-        return 'crimson';
-      case 'GREEN':
-        return '#81E890';
-      case 'BLUE':
-        return 'cornflowerblue';
-    }
+    this.fightRender.setAppearance(element, user);
   }
 
   setUserDead(user: User): void {
-    if (user?.login === this.parent.login) {
+    if (user?.login === this.sessionStore.username()) {
       this.localPlayerDead = true;
     }
     if (this.type === 'pvp') {
-      console.log(user.login + ' has perished.');
     } else {
       this.died.push(user.login);
     }
     if (this.statsElements[user.login]) {
       this.statsElements[user.login].style.display = 'none';
     }
-    let counter = 0;
-    let translate: string;
-    const anim = setInterval(() => {
-      counter++;
-      this.fightersElements[user.login].style.transform = 'rotate(-' + counter + 'deg)';
-      if (counter < 27) {
-        translate = 'translate(0,-' + (counter) * 2 + 'px)';
-        this.fightersElements[user.login].style.transform += translate;
-      } else {
-        this.fightersElements[user.login].style.transform += translate;
-      }
-      if (counter === 87) {
-        clearInterval(anim);
-      }
-    }, 3);
+    this.fightRender.animateUserDeath(user, this.fightersElements);
 
   }
 
   setAnimalDead(animal: NinjaAnimal) {
-    console.log('dead');
     const allyAnimal = this.animals1.includes(animal);
     const key = this.getAnimalSideKey(animal?.name, allyAnimal);
     if (this.statsElements[key]) {
       this.statsElements[key].style.display = 'none';
     }
-    let counter = 0;
-    let translate: string;
-    const animalElementKey = this.getAnimalElementSideKey(animal.name, allyAnimal);
-    const anim = setInterval(() => {
-      counter++;
-      this.animalsElements[animalElementKey].style.transform = 'rotate(-' + counter + 'deg)';
-      if (counter < 27) {
-        translate = 'translate(0,-' + (counter) * 2 + 'px)';
-        this.animalsElements[animalElementKey].style.transform += translate;
-      } else {
-        this.animalsElements[animalElementKey].style.transform += translate;
-      }
-      if (counter === 87) {
-        clearInterval(anim);
-      }
-    }, 3);
+    this.fightRender.animateAnimalDeath(animal, allyAnimal, this.animalsElements);
   }
 
   finishFight(death: boolean, victory: boolean, loss: boolean, surrendered = false): void {
@@ -1692,7 +1409,7 @@ export class FightComponent implements OnInit, OnDestroy {
       this.endServ.victory = victory;
       this.endServ.surrendered = surrendered;
       this.resolveRatingChangeAndShowResult();
-    }, 1000);
+    }, FIGHT_UI.finishDelayMs);
   }
 
   drawAnimal(animal: NinjaAnimal, ally: boolean) {

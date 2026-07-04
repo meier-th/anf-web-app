@@ -1,252 +1,82 @@
 import {Component, HostListener, OnDestroy, OnInit} from '@angular/core';
-import {Router} from '@angular/router';
-import {HttpClient, HttpParams} from '@angular/common/http';
-import {ConfirmationService, MessageService} from 'primeng/api';
-import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
-import {AuthComponent} from '../auth/auth.component';
-import {CookieService} from 'ngx-cookie-service';
-import {CompatClient} from '@stomp/stompjs';
-import {RoomComponent} from '../room/room.component';
-import {FightService} from '../services/fight/fight.service';
-import {TranslateService} from '../services/translate.service';
+import { Router, RouterOutlet } from '@angular/router';
+import {MessageService} from 'primeng/api';
+import {DialogService} from 'primeng/dynamicdialog';
 import {TranslatePipe} from '../services/translate.pipe';
-import {AuthApiService} from '../core/api/auth-api.service';
-import {SessionStore} from '../core/state/session.store';
-import {WebsocketGatewayService} from '../core/realtime/websocket-gateway.service';
-import {ApiConfigService} from '../core/config/api-config.service';
+import {MainFacadeService} from '../core/facade/main.facade.service';
+import { Bind } from 'primeng/bind';
+import { Button } from 'primeng/button';
 
 @Component({
-  selector: 'app-main',
-  standalone: false,
-  templateUrl: './main.component.html',
-  styleUrls: ['./main.component.less'],
-  providers: [DialogService, ConfirmationService]
+    selector: 'app-main',
+    standalone: true,
+    templateUrl: './main.component.html',
+    styleUrls: ['./main.component.less'],
+    providers: [DialogService, MainFacadeService],
+    imports: [Bind, Button, RouterOutlet, TranslatePipe]
 })
 export class MainComponent implements OnInit, OnDestroy {
-  constructor(public router: Router, private dialogService: DialogService,
-              private cookieService: CookieService, private authApi: AuthApiService,
-              private http: HttpClient, private apiConfig: ApiConfigService,
-              public messageService: MessageService, private fightService: FightService,
-              private confirmationService: ConfirmationService,
-              private translate: TranslateService, private pipe: TranslatePipe,
-              private sessionStore: SessionStore, private wsGateway: WebsocketGatewayService) {
-  }
-
-  loggedIn: boolean;
-  login: string;
-  dialog: DynamicDialogRef;
-  private stompClient: CompatClient;
-  russian = false;
-  display = false;
-  languageMenuOpen = false;
-  currentLanguage: 'en' | 'ru' = 'en';
-  private onlineHeartbeatId: ReturnType<typeof setInterval> | null = null;
+  constructor(public router: Router, public messageService: MessageService, public facade: MainFacadeService) {}
 
   ngOnInit() {
-    this.loggedIn = this.cookieService.get('loggedIn') === 'true';
-    this.login = this.cookieService.get('username');
-    this.sessionStore.setSession(this.loggedIn, this.login ?? '');
-    if (this.loggedIn) {
-      this.authApi.checkCookies().subscribe((response: { authorized: boolean, login: string }) => {
-        this.loggedIn = true;
-        this.login = response.login;
-        this.sessionStore.setSession(true, response.login);
-        this.cookieService.set('username', response.login);
-        this.cookieService.set('loggedIn', 'true');
-        this.authApi.setOnline().subscribe();
-        this.startOnlineHeartbeat();
-        if (this.router.url === '/start' || this.router.url === '/') {
-          this.router.navigateByUrl('main');
-        }
-      }, (response: { authorized: boolean, login: string }) => {
-        this.loggedIn = false;
-        this.sessionStore.clearSession();
-      this.stopOnlineHeartbeat();
-        this.cookieService.delete('loggedIn');
-        this.cookieService.delete('username');
-        this.router.navigateByUrl('start');
-      });
-    }
-    this.initializeWebsockets();
-    this.setLanguage(this.russian ? 'ru' : 'en');
+    this.facade.init();
   }
 
   toggleLanguageMenu(event: MouseEvent): void {
-    event.stopPropagation();
-    this.languageMenuOpen = !this.languageMenuOpen;
+    this.facade.toggleLanguageMenu(event);
   }
 
   setLanguage(language: 'en' | 'ru'): void {
-    this.currentLanguage = language;
-    this.russian = language === 'ru';
-    this.translate.use(language);
-    this.languageMenuOpen = false;
+    this.facade.setLanguage(language);
   }
 
   @HostListener('document:click')
   closeLanguageMenu(): void {
-    this.languageMenuOpen = false;
+    this.facade.closeLanguageMenu();
   }
 
   showLoginBlock() {
-    this.dialog = this.dialogService.open(AuthComponent, {
-      width: '560px',
-      contentStyle: {
-        overflow: 'hidden',
-        'max-height': '90vh'
-      }
-    });
+    this.facade.showLoginBlock();
   }
 
-  loginSuccess() {
-    this.messageService.add({severity: 'success', summary: this.pipe.transform('Success'), detail: this.pipe.transform('Authorized')});
-    this.dialog.close();
-    this.loggedIn = true;
-    this.sessionStore.setSession(true, this.login ?? '');
-    this.authApi.setOnline().subscribe();
-    this.startOnlineHeartbeat();
-    this.initializeWebsockets();
-    this.router.navigateByUrl('main');
+  loginSuccess(username?: string) {
+    this.facade.loginSuccess(username);
+  }
+
+  onRegistrationSession(username: string): void {
+    this.facade.onRegistrationSession(username);
   }
 
   logout() {
-    this.authApi.setOffline().subscribe();
-    this.authApi.logout().subscribe();
-    this.loggedIn = false;
-    this.sessionStore.clearSession();
-    this.stopOnlineHeartbeat();
-    this.router.navigateByUrl('start');
-    this.cookieService.delete('loggedIn');
-    this.cookieService.delete('username');
-    this.messageService.add({severity: 'success', summary: this.pipe.transform('Success'), detail: this.pipe.transform('Logged out')});
+    this.facade.logout();
   }
 
   ngOnDestroy(): void {
-    if (this.loggedIn) {
-      this.authApi.setOffline().subscribe();
-    }
-    this.stopOnlineHeartbeat();
-  }
-
-  initializeWebsockets(): void {
-    this.stompClient = this.wsGateway.createClient();
-    const that = this;
-    this.stompClient.connect({}, function (frame) {
-      that.stompClient.subscribe('/user/invite', (response) => {
-        const message: string = response.body; // format: {pvp/pve}:{sender-name}
-        const firstSeparator = message.indexOf(':');
-        const lastSeparator = message.lastIndexOf(':');
-        that.fightService.type = message.substring(0, firstSeparator);
-        that.fightService.author = message.substring(firstSeparator + 1, lastSeparator);
-        that.fightService.id = message.substring(lastSeparator + 1);
-        that.fightService.valuesSet = true;
-        that.dialog = that.dialogService.open(RoomComponent, {
-          width: '200px',
-          height: '200px'
-        });
-      });
-      that.stompClient.subscribe('/user/start', (response) => {
-        const message = response.body;
-        const parts = message.split(':');
-        let mode = that.fightService.type;
-        let id = '';
-        if (parts.length >= 3) {
-          mode = parts[0];
-          id = parts[2];
-        } else if (parts.length === 2) {
-          id = parts[1];
-        } else {
-          id = message;
-        }
-        if (mode) {
-          const normalized = mode.toLowerCase();
-          that.fightService.type = normalized.includes('pvp') ? 'pvp' : 'pve';
-        } else {
-          that.fightService.type = 'pvp';
-        }
-        that.fightService.valuesSet = true;
-        that.fightService.id = id;
-        console.log('Fight started: ' + message);
-        that.router.navigateByUrl('fight/' + that.fightService.type + '/' + id);
-        that.dialog?.close();
-      });
-    });
+    this.facade.destroy();
   }
 
   isFightRoute(): boolean {
-    return this.router.url.startsWith('/fight/');
+    return this.facade.isFightRoute();
   }
 
   onPrimaryAction(): void {
-    if (!this.isFightRoute()) {
-      this.router.navigateByUrl('main');
-      return;
-    }
-    this.confirmSurrender();
+    this.facade.onPrimaryAction();
   }
 
-  private confirmSurrender(): void {
-    this.confirmationService.confirm({
-      header: this.pipe.transform('Surrender'),
-      message: this.pipe.transform('Confirm surrender?'),
-      acceptLabel: this.pipe.transform('Confirm'),
-      rejectLabel: this.pipe.transform('Cancel'),
-      accept: () => this.surrenderCurrentFight()
-    });
+  cancelSurrenderConfirm(): void {
+    this.facade.cancelSurrenderConfirm();
   }
 
-  private surrenderCurrentFight(): void {
-    const fightUuid = this.getCurrentFightUuid();
-    if (!fightUuid) {
-      this.messageService.add({
-        severity: 'error',
-        summary: this.pipe.transform('Error'),
-        detail: this.pipe.transform('Fight not found')
-      });
-      return;
-    }
-    this.http.post(this.apiConfig.buildUrl('/fight/surrender'), null, {
-      withCredentials: true,
-      params: new HttpParams().append('fightUuid', fightUuid)
-    }).subscribe({
-      next: () => {
-        this.display = false;
-      },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: this.pipe.transform('Error'),
-          detail: this.pipe.transform('Unable to surrender')
-        });
-      }
-    });
+  confirmSurrender(): void {
+    this.facade.confirmSurrender();
   }
 
-  private getCurrentFightUuid(): string {
-    const segments = this.router.url.split('/').filter((segment) => segment.length > 0);
-    if (segments.length >= 3 && segments[0] === 'fight') {
-      return segments[2];
-    }
-    return this.fightService.id ?? '';
-  }
-
-  private startOnlineHeartbeat(): void {
-    if (this.onlineHeartbeatId) {
-      return;
-    }
-    this.onlineHeartbeatId = setInterval(() => {
-      if (this.loggedIn) {
-        this.authApi.setOnline().subscribe();
-      }
-    }, 120000);
-  }
-
-  private stopOnlineHeartbeat(): void {
-    if (!this.onlineHeartbeatId) {
-      return;
-    }
-    clearInterval(this.onlineHeartbeatId);
-    this.onlineHeartbeatId = null;
-  }
+  get loggedIn(): boolean { return this.facade.loggedIn; }
+  get login(): string { return this.facade.login; }
+  get display(): boolean { return this.facade.display; }
+  set display(value: boolean) { this.facade.display = value; }
+  get showSurrenderConfirm(): boolean { return this.facade.showSurrenderConfirm; }
+  get languageMenuOpen(): boolean { return this.facade.languageMenuOpen; }
+  get currentLanguage(): 'en' | 'ru' { return this.facade.currentLanguage; }
 
 }

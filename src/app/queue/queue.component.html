@@ -4,7 +4,8 @@
     <button type="button" class="close-btn" (click)="closeLobby()" aria-label="Close lobby">X</button>
   </div>
   <div class="queue-content">
-    <div class="section-card" *ngIf="lobbyUuid">
+    @if (lobbyUuid) {
+    <div class="section-card">
       <div class="lobby-code-row">
         <div class="code-text">
           <span class="label">Your lobby code</span>
@@ -18,12 +19,16 @@
         </p-button>
       </div>
       <p class="hint">Share this code with players so they can join.</p>
-      <p class="feedback" *ngIf="copyFeedback">{{ copyFeedback }}</p>
+      @if (copyFeedback) {
+      <p class="feedback">{{ copyFeedback }}</p>
+      }
     </div>
+    }
 
     <p class="status">{{ statusMessage }}</p>
 
-    <div class="section-card" *ngIf="!lobbyUuid">
+    @if (!lobbyUuid) {
+    <div class="section-card">
       <div class="join-existing-inline">
         <input
           type="text"
@@ -37,11 +42,14 @@
         </p-button>
       </div>
     </div>
+    }
 
-    <div class="section-card" *ngIf="isPvpLobbyMode && !lobbyUuid">
+    @if (isPvpLobbyMode && !lobbyUuid) {
+    <div class="section-card">
       <p class="players-count">Open lobbies</p>
       <div class="open-lobbies">
-        <div class="lobby-row" *ngFor="let lobby of openLobbies">
+        @for (lobby of openLobbies; track lobby.lobbyUuid) {
+        <div class="lobby-row">
           <div class="lobby-meta">
             <span class="lobby-uuid">{{ lobby.lobbyUuid }}</span>
             <span class="lobby-players">{{ lobby.playerCount }}/{{ lobby.capacity }} players</span>
@@ -53,18 +61,27 @@
             (onClick)="joinExistingLobby(lobby.lobbyUuid)">
           </p-button>
         </div>
-        <p class="hint" *ngIf="openLobbies.length === 0">No open lobbies right now.</p>
+        }
+        @if (openLobbies.length === 0) {
+        <p class="hint">No open lobbies right now.</p>
+        }
       </div>
     </div>
+    }
 
-    <div class="section-card" *ngIf="lobbyUuid">
+    @if (lobbyUuid) {
+    <div class="section-card">
       <p class="players-count">Players in lobby: {{ players.length }}/{{ expectedPlayers }}</p>
       <ul class="players-list">
-        <li *ngFor="let player of players">{{ player }}</li>
+        @for (player of players; track player) {
+        <li>{{ player }}</li>
+        }
       </ul>
     </div>
+    }
 
-    <div class="actions-row" *ngIf="lobbyUuid">
+    @if (lobbyUuid) {
+    <div class="actions-row">
       <p-button
         id="start"
         label="{{'Start' | translate}}"
@@ -78,8 +95,10 @@
         (onClick)="leaveLobby()">
       </p-button>
     </div>
+    }
 
-    <div class="actions-row pvp-browser-actions" *ngIf="isPvpLobbyMode && !lobbyUuid">
+    @if (isPvpLobbyMode && !lobbyUuid) {
+    <div class="actions-row pvp-browser-actions">
       <p-button
         label="Create lobby"
         styleClass="lobby-action-btn primary"
@@ -92,5 +111,6 @@
         (onClick)="loadOpenLobbies()">
       </p-button>
     </div>
+    }
   </div>
 </div>

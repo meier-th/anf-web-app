@@ -1,346 +1,180 @@
-import {AfterContentInit, AfterViewChecked, AfterViewInit, Component, Injector, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams, HttpRequest} from '@angular/common/http';
+import {AfterViewChecked, Component, OnDestroy, OnInit} from '@angular/core';
 import {User} from '../classes/user';
 import {Message} from '../classes/message';
-import {MainComponent} from '../main/main.component';
 import {ConfirmationService} from 'primeng/api';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {QueueComponent} from '../queue/queue.component';
 import {AreaService} from '../services/area/area.service';
 import {CookieService} from 'ngx-cookie-service';
-import {Stomp} from '@stomp/stompjs';
 import {AnimalRaceChoiceComponent} from '../animal-race-choice/animal-race-choice.component';
-import SockJS from 'sockjs-client';
 import {animate, state, style, transition, trigger} from '@angular/animations';
-import {ApiConfigService} from '../core/config/api-config.service';
 import {Stats} from '../classes/stats';
-import {Character} from '../classes/character';
-import {Appearance} from '../classes/appearance';
 import {HistoryComponent} from '../history/history.component';
 import {SpellsComponent} from '../spells/spells.component';
+import {Router} from '@angular/router';
+import {ProfileApiService} from '../core/api/profile-api.service';
+import {ProfileDomainService} from '../core/domain/profile-domain.service';
+import {DIALOG_SIZES} from '../core/constants/app.constants';
+import {ProfileRenderService} from '../core/ui/profile-render.service';
+import {ProfileReadyFacadeService} from '../core/facade/profile-ready.facade.service';
+import { CharacterComponent } from '../character/character.component';
+import { Bind } from 'primeng/bind';
+import { Button } from 'primeng/button';
+import { FriendsPageComponent } from '../friends-page/friends-page.component';
+import { ChatComponent } from '../chat/chat.component';
+import { UsersListComponent } from '../users-list/users-list.component';
+import { TranslatePipe } from '../services/translate.pipe';
 
 @Component({
-  selector: 'app-profile-page',
-  standalone: false,
-  templateUrl: './profile-page.component.html',
-  styleUrls: ['./profile-page.component.less'],
-  providers: [DialogService, ConfirmationService],
-  animations: [
-    trigger('load1', [
-      state('hidden', style({
-          bottom: '-20%',
-          display: 'none',
-          opacity: '0.3'
-        })
-      ),
-      state('default', style({})
-      ),
-      transition('hidden => default', [
-        animate('0.5s')
-      ])]
-    ),
-    trigger('load2', [
-      state('hidden', style({
-          bottom: '-20%',
-          display: 'none',
-          opacity: '0.3'
-        })
-      ),
-      state('default', style({})
-      ),
-      transition('hidden => default', [
-        animate('0.8s')
-      ])]
-    ),
-    trigger('load3', [
-      state('hidden', style({
-          bottom: '-20%',
-          display: 'none',
-          opacity: '0.3'
-        })
-      ),
-      state('default', style({})
-      ),
-      transition('hidden => default', [
-        animate('1.1s')
-      ])]
-    )
-  ]
+    selector: 'app-profile-page',
+    templateUrl: './profile-page.component.html',
+    styleUrls: ['./profile-page.component.less'],
+    providers: [DialogService, ConfirmationService],
+    animations: [
+        trigger('load1', [
+            state('hidden', style({
+                bottom: '-20%',
+                display: 'none',
+                opacity: '0.3'
+            })),
+            state('default', style({})),
+            transition('hidden => default', [
+                animate('0.5s')
+            ])
+        ]),
+        trigger('load2', [
+            state('hidden', style({
+                bottom: '-20%',
+                display: 'none',
+                opacity: '0.3'
+            })),
+            state('default', style({})),
+            transition('hidden => default', [
+                animate('0.8s')
+            ])
+        ]),
+        trigger('load3', [
+            state('hidden', style({
+                bottom: '-20%',
+                display: 'none',
+                opacity: '0.3'
+            })),
+            state('default', style({})),
+            transition('hidden => default', [
+                animate('1.1s')
+            ])
+        ])
+    ],
+    imports: [CharacterComponent, Bind, Button, FriendsPageComponent, ChatComponent, UsersListComponent, TranslatePipe]
 })
 export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy {
   public user: User;
   public loaded = false;
   public unreadMessages: Message[];
   public friends: string[];
-  public parent = this.injector.get(MainComponent);
-  public ready = false;
   public checked = false;
   dialog: DynamicDialogRef;
-  private stompClient;
   private statsMissingFromProfile = false;
   private hoveredGround: HTMLElement | null = null;
-  private readyTimeoutId: ReturnType<typeof setTimeout> | null = null;
-  private readyHeartbeatId: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private http: HttpClient, private injector: Injector,
-              private dialogService: DialogService, private areaService: AreaService,
+  constructor(private dialogService: DialogService, private areaService: AreaService,
               private cookieService: CookieService, private confService: ConfirmationService,
-              private apiConfig: ApiConfigService) {
+              private router: Router,
+              private profileApi: ProfileApiService, private profileDomain: ProfileDomainService,
+              private profileRender: ProfileRenderService,
+              private profileReadyFacade: ProfileReadyFacadeService) {
 
   }
 
   ngOnInit() {
     //document.documentElement.style.overflowY = 'hidden';
-    this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true}).subscribe(data => {
+    this.profileApi.getProfile().subscribe(data => {
       this.statsMissingFromProfile = !data.stats;
-      this.user = this.normalizeUser(data);
+      this.user = this.profileDomain.normalizeUser(data);
       if (typeof this.user.character.resistance === 'number') {
         this.user.character.resistance = parseFloat(this.user.character.resistance.toFixed(2));
       }
       this.loaded = true;
       this.loadStatsIfMissing();
     }, () => {
-      this.parent.loggedIn = false;
-      this.parent.router.navigateByUrl('start');
+      this.router.navigateByUrl('start');
     });
-    this.ready = this.cookieService.get('ready') === 'true';
-    if (this.ready) {
-      this.sendReadyState(true);
-      this.startReadyHeartbeat();
-      this.scheduleReadyAutoOff();
-    }
-    this.subscribeForWebsockets();
-  }
-
-  subscribeForWebsockets() {
-    const ws = new SockJS(this.apiConfig.buildUrl('/socket'));
-    this.stompClient = Stomp.over(ws);
-    const that = this;
-    this.stompClient.connect({}, function (frame) {
-      that.stompClient.subscribe('/online', (message) => {
-        const str = message.body; // format: {username}:{online/offline}
-        const i = str.indexOf(':');
-        const user = str.substring(0, i);
-        const type = str.substring(i + 1, str.length);
-        if (user === that.user.login && type === 'offline' && that.ready === true) {
-          that.ready = false;
-        }
-      });
-    });
+    this.profileReadyFacade.init(() => this.user?.login);
   }
 
   public changeReadyState() {
-    this.sendReadyState(this.ready);
-    if (this.ready) {
-      this.startReadyHeartbeat();
-      this.scheduleReadyAutoOff();
-    } else {
-      this.stopReadyHeartbeat();
-      this.clearReadyAutoOff();
-    }
-    this.cookieService.set('ready', this.ready.toString(), new Date(Date.now() + 300000));
+    this.profileReadyFacade.setReadyState(this.ready);
   }
 
   public setReadyState(isReady: boolean): void {
     if (this.ready === isReady) {
       return;
     }
-    this.ready = isReady;
-    this.changeReadyState();
+    this.profileReadyFacade.setReadyState(isReady);
   }
 
   changeHair() {
-    const array = document.getElementsByClassName('hair');
-    let color = this.user.character.appearance.hairColour;
-    switch (this.user.character.appearance.hairColour) {
-      case 'YELLOW':
-        color = '#DEAB7F';
-        break;
-      case 'BROWN':
-        color = '#A53900';
-        break;
-      case 'BLACK':
-        color = '#2D221C';
-        break;
-    }
-    for (let i = 0; i < array.length; i++) {
-      (<HTMLElement>array[i]).style.fill = color;
-      (<HTMLElement>array[i]).style.stroke = color;
-    }
+    this.profileRender.renderProfileAppearance(this.user);
   }
 
   changeSkin() {
-    const array = document.getElementsByClassName('skin');
-    let color = this.user.character.appearance.skinColour;
-    switch (this.user.character.appearance.skinColour) {
-      case 'BLACK':
-        color = '#6E2B12';
-        break;
-      case 'WHITE':
-        color = '#EBCCAB';
-        break;
-      case 'LATIN':
-        color = '#C37C4D';
-        break;
-      case 'DARK':
-        color = '#934C1D';
-        break;
-    }
-    for (let i = 0; i < array.length; i++) {
-      (<HTMLElement>array[i]).style.fill = color;
-      (<HTMLElement>array[i]).style.stroke = color;
-    }
+    this.profileRender.renderProfileAppearance(this.user);
   }
 
   changeClothes() {
-    const array = document.getElementsByClassName('clothes');
-    let color = this.user.character.appearance.clothesColour;
-    switch (this.user.character.appearance.clothesColour) {
-      case 'RED':
-        color = 'crimson';
-        break;
-      case 'GREEN':
-        color = '#81E890';
-        break;
-      case 'BLUE':
-        color = 'cornflowerblue';
-        break;
-    }
-    for (let i = 0; i < array.length; i++) {
-      (<HTMLElement>array[i]).style.fill = color;
-      (<HTMLElement>array[i]).style.stroke = color;
-    }
+    this.profileRender.renderProfileAppearance(this.user);
   }
 
   setGender() {
-    (<HTMLElement>document.getElementsByClassName('powers')[0]).style.display = 'none';
-    const males = document.getElementsByClassName('male');
-    const females = document.getElementsByClassName('female');
-    if (this.user.character.appearance.gender === 'FEMALE') {
-      (<HTMLElement>females[0]).style.display = 'block';
-      (<HTMLElement>males[0]).style.display = 'none';
-    } else {
-      (<HTMLElement>males[0]).style.display = 'block';
-      (<HTMLElement>females[0]).style.display = 'none';
-    }
-    this.user.character.appearance.gender = this.user.character.appearance.gender ? 'FEMALE' : 'MALE';
+    this.profileRender.renderProfileAppearance(this.user);
   }
 
   upgrade(param: string): void {
-    this.http.post(this.apiConfig.buildUrl('/profile/character'),
-      new HttpParams().set('quality', param),
-      {
-        headers:
-          new HttpHeaders(
-            {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            }),
-        withCredentials: true
-      }).subscribe(msg => {
-    });
-    if (param === 'hp') {
-      this.user.character.maxHp += 15;
-    } else if (param === 'chakra') {
-      this.user.character.maxChakra += 7;
-    } else if (param === 'damage') {
-      this.user.character.physicalDamage += 4;
-    } else {
-      this.user.character.resistance += parseFloat(((1 - this.user.character.resistance) / 4).toFixed(2));
-    }
-    this.user.stats.upgradePoints--;
-  }
-
-  private normalizeUser(user: User): User {
-    const defaultCharacter = this.createDefaultCharacter();
-    const normalizedCharacter = {
-      ...defaultCharacter,
-      ...(user.character ?? {}),
-      appearance: {
-        ...defaultCharacter.appearance,
-        ...(user.character?.appearance ?? {})
-      }
-    };
-
-    return {
-      ...user,
-      character: normalizedCharacter,
-      stats: user.stats ?? this.createDefaultStats()
-    };
-  }
-
-  private createDefaultCharacter(): Character {
-    return {
-      animalRace: undefined,
-      cretionDate: undefined,
-      appearance: this.createDefaultAppearance(),
-      maxChakra: 30,
-      maxHp: 100,
-      user: undefined,
-      physicalDamage: 10,
-      resistance: 0.05,
-      spellsKnown: [],
-      fights: [],
-      currentHP: 100,
-      currentChakra: 30
-    };
-  }
-
-  private createDefaultAppearance(): Appearance {
-    return {
-      gender: 'MALE',
-      skinColour: 'WHITE',
-      hairColour: 'YELLOW',
-      clothesColour: 'GREEN'
-    };
-  }
-
-  private createDefaultStats(): Stats {
-    return {
-      fights: 0,
-      wins: 0,
-      losses: 0,
-      deaths: 0,
-      rating: 0,
-      experience: 0,
-      level: 1,
-      upgradePoints: 0,
-      spellPoints: 0
-    };
+    this.profileApi.upgradeCharacter(param).subscribe();
+    this.profileDomain.applyUpgradeLocally(this.user, param);
   }
 
   private loadStatsIfMissing() {
     if (!this.user || !this.statsMissingFromProfile) {
       return;
     }
-    this.http.get<Stats>(this.apiConfig.buildUrl(`/users/${this.user.login}/stats`), {withCredentials: true}).subscribe({
+    this.profileApi.getStats(this.user.login).subscribe({
       next: (stats) => {
         this.user.stats = {
-          ...this.createDefaultStats(),
+          ...this.profileDomain.createDefaultStats(),
           ...stats
         };
       },
       error: () => {
-        this.user.stats = this.createDefaultStats();
+        this.user.stats = this.profileDomain.createDefaultStats();
       }
     });
   }
 
   chooseAnimalRace(): void {
-    this.dialog = this.dialogService.open(AnimalRaceChoiceComponent, {width: '800px', height: '600px'});
+    this.dialog = this.dialogService.open(AnimalRaceChoiceComponent, {
+      width: DIALOG_SIZES.raceChoice.width,
+      height: DIALOG_SIZES.raceChoice.height,
+      data: {
+        onSelected: (raceName: string) => {
+          this.user.character.animalRace = raceName;
+        }
+      }
+    });
   }
 
   openFightLog(): void {
     this.dialog = this.dialogService.open(HistoryComponent, {
-      width: '980px',
-      height: '640px',
+      width: DIALOG_SIZES.queue.width,
+      height: DIALOG_SIZES.queue.height,
       closable: false
     });
   }
 
   openSpellbook(): void {
     this.dialog = this.dialogService.open(SpellsComponent, {
-      width: '980px',
-      height: '640px',
+      width: DIALOG_SIZES.queue.width,
+      height: DIALOG_SIZES.queue.height,
       closable: false
     });
   }
@@ -348,18 +182,18 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   ngAfterViewChecked() {
     if (!this.checked && this.loaded) {
       this.checked = true;
-      this.changeClothes();
-      this.changeHair();
-      this.changeSkin();
-      this.setGender();
+      this.profileRender.renderProfileAppearance(this.user);
       const dialogService = this.dialogService;
       const areaService = this.areaService;
       const array = document.querySelectorAll('.ground, .bidju');
       const that = this;
       for (let i = 0; i < array.length; i++) {
         (<HTMLElement>array[i]).onclick = function () {
-          console.log('kek');
-          that.parent.dialog = dialogService.open(QueueComponent, {width: '980px', height: '640px', closable: false});
+          that.dialog = dialogService.open(QueueComponent, {
+            width: DIALOG_SIZES.queue.width,
+            height: DIALOG_SIZES.queue.height,
+            closable: false
+          });
           areaService.selectedArea = (<HTMLElement>this).id;
           areaService.pvp = (<HTMLElement>array[i]).classList.contains('ground');
         };
@@ -370,9 +204,11 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
         map.addEventListener('mousemove', (event: MouseEvent) => {
           const stack = document.elementsFromPoint(event.clientX, event.clientY);
           const ground = stack.find((element) => element.classList?.contains('ground')) as HTMLElement | undefined;
-          this.setHoveredGround(ground ?? null);
+          this.hoveredGround = this.profileRender.setHoveredGround(this.hoveredGround, ground ?? null);
         });
-        map.addEventListener('mouseleave', () => this.setHoveredGround(null));
+        map.addEventListener('mouseleave', () => {
+          this.hoveredGround = this.profileRender.setHoveredGround(this.hoveredGround, null);
+        });
       }
     }
   }
@@ -382,65 +218,11 @@ export class ProfilePageComponent implements OnInit, AfterViewChecked, OnDestroy
   }
 
   ngOnDestroy() {
-    this.stopReadyHeartbeat();
-    this.clearReadyAutoOff();
-    this.setHoveredGround(null);
+    this.profileReadyFacade.destroy();
+    this.hoveredGround = this.profileRender.setHoveredGround(this.hoveredGround, null);
     document.documentElement.style.overflowY = 'scroll';
   }
-
-  private sendReadyState(isReady: boolean): void {
-    const endpoint = isReady ? '/profile/online' : '/profile/offline';
-    this.http.get(this.apiConfig.buildUrl(endpoint), {withCredentials: true}).subscribe();
-  }
-
-  private startReadyHeartbeat(): void {
-    if (this.readyHeartbeatId) {
-      return;
-    }
-    this.readyHeartbeatId = setInterval(() => {
-      if (this.ready) {
-        this.sendReadyState(true);
-      }
-    }, 120000);
-  }
-
-  private stopReadyHeartbeat(): void {
-    if (!this.readyHeartbeatId) {
-      return;
-    }
-    clearInterval(this.readyHeartbeatId);
-    this.readyHeartbeatId = null;
-  }
-
-  private scheduleReadyAutoOff(): void {
-    this.clearReadyAutoOff();
-    this.readyTimeoutId = setTimeout(() => {
-      if (!this.ready) {
-        return;
-      }
-      this.setReadyState(false);
-    }, 300000);
-  }
-
-  private clearReadyAutoOff(): void {
-    if (!this.readyTimeoutId) {
-      return;
-    }
-    clearTimeout(this.readyTimeoutId);
-    this.readyTimeoutId = null;
-  }
-
-  private setHoveredGround(ground: HTMLElement | null) {
-    if (this.hoveredGround === ground) {
-      return;
-    }
-    if (this.hoveredGround) {
-      this.hoveredGround.classList.remove('hovered-ground');
-    }
-    this.hoveredGround = ground;
-    if (this.hoveredGround) {
-      this.hoveredGround.classList.add('hovered-ground');
-    }
-  }
+  get ready(): boolean { return this.profileReadyFacade.ready; }
+  set ready(value: boolean) { this.profileReadyFacade.ready = value; }
 
 }

@@ -4,12 +4,14 @@ import { HistoryFight } from '../classes/history-fight';
 import { PVPFight } from '../classes/pvpfight';
 import {ApiConfigService} from '../core/config/api-config.service';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
+import { NgClass, DatePipe } from '@angular/common';
+import { TranslatePipe } from '../services/translate.pipe';
 
 @Component({
-  selector: 'app-history',
-  standalone: false,
-  templateUrl: './history.component.html',
-  styleUrls: ['./history.component.less']
+    selector: 'app-history',
+    templateUrl: './history.component.html',
+    styleUrls: ['./history.component.less'],
+    imports: [NgClass, DatePipe, TranslatePipe]
 })
 export class HistoryComponent implements OnInit {
 

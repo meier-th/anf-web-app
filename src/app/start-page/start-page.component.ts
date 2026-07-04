@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 
 @Component({
-  selector: 'app-start-page',
-  standalone: false,
-  templateUrl: './start-page.component.html',
-  styleUrls: ['./start-page.component.less']
+    selector: 'app-start-page',
+    templateUrl: './start-page.component.html',
+    styleUrls: ['./start-page.component.less']
 })
 export class StartPageComponent implements OnInit {
 

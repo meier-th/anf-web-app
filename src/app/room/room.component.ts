@@ -2,12 +2,15 @@ import {Component, OnInit} from '@angular/core';
 import {FightService} from '../services/fight/fight.service';
 import {HttpClient} from '@angular/common/http';
 import {ApiConfigService} from '../core/config/api-config.service';
+import { Bind } from 'primeng/bind';
+import { Button } from 'primeng/button';
+import { TranslatePipe } from '../services/translate.pipe';
 
 @Component({
-  selector: 'app-room',
-  standalone: false,
-  templateUrl: './room.component.html',
-  styleUrls: ['./room.component.less']
+    selector: 'app-room',
+    templateUrl: './room.component.html',
+    styleUrls: ['./room.component.less'],
+    imports: [Bind, Button, TranslatePipe]
 })
 export class RoomComponent implements OnInit {
   id: string;

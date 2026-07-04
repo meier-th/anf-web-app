@@ -1,39 +1,40 @@
-import {Component, Injector, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {Message} from '../classes/message';
-import {HttpClient, HttpParams} from '@angular/common/http';
-import {MainComponent} from '../main/main.component';
 import {User} from '../classes/user';
-import {Stomp} from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+import {ActivatedRoute, Router} from '@angular/router';
+import {MessageApiService} from '../core/api/message-api.service';
+import {SocialRealtimeService} from '../core/realtime/social-realtime.service';
+import {CompatClient} from '@stomp/stompjs';
+import { Bind } from 'primeng/bind';
+import { Button } from 'primeng/button';
+import { FormsModule } from '@angular/forms';
+import { InputText } from 'primeng/inputtext';
+import { TranslatePipe } from '../services/translate.pipe';
 
 @Component({
-  selector: 'app-dialogue',
-  standalone: false,
-  templateUrl: './dialogue.component.html',
-  styleUrls: ['./dialogue.component.less']
+    selector: 'app-dialogue',
+    templateUrl: './dialogue.component.html',
+    styleUrls: ['./dialogue.component.less'],
+    imports: [Bind, Button, FormsModule, InputText, TranslatePipe]
 })
-export class DialogueComponent implements OnInit {
+export class DialogueComponent implements OnInit, OnDestroy {
 
   messages: Message[];
-  parent = this.injector.get(MainComponent);
   interlocutor: string;
   input: string;
   login: string;
-  private stompClient;
+  private stompClient: CompatClient;
 
-  constructor(private httpClient: HttpClient, private injector: Injector) {
+  constructor(private route: ActivatedRoute, private messageApi: MessageApiService,
+              private socialRealtime: SocialRealtimeService, private router: Router) {
   }
 
   ngOnInit() {
-    this.httpClient.get<User>('http://localhost:8080/profile', {withCredentials: true}).subscribe(data => {
+    this.messageApi.getProfile().subscribe(data => {
       this.login = data.login;
     });
-    this.interlocutor = this.parent.router.url;
-    this.interlocutor = this.interlocutor.substring(this.interlocutor.lastIndexOf('/') + 1);
-    this.httpClient.get<Message[]>('http://localhost:8080/profile/messages/dialog', {
-      withCredentials: true,
-      params: new HttpParams().append('secondName', this.interlocutor)
-    }).subscribe((data) => {
+    this.interlocutor = this.route.snapshot.paramMap.get('login') ?? '';
+    this.messageApi.getDialogue(this.interlocutor).subscribe((data) => {
       this.messages = data;
     });
     this.initializeWebSocketConnection();
@@ -44,12 +45,7 @@ export class DialogueComponent implements OnInit {
     if (this.input.length === 0) {
       return;
     }
-    this.httpClient.post('http://localhost:8080/profile/messages', null, {
-      withCredentials: true,
-      params: new HttpParams()
-        .append('message', this.input)
-        .append('receiver', this.interlocutor)
-    }).subscribe();
+    this.messageApi.sendMessage(this.interlocutor, this.input).subscribe();
     const msg = new Message();
     const tempSendr = new User();
     tempSendr.login = this.login;
@@ -64,31 +60,34 @@ export class DialogueComponent implements OnInit {
   }
 
   initializeWebSocketConnection() {
-    const ws = new SockJS('http://localhost:8080/socket');
-    this.stompClient = Stomp.over(ws);
-    const that = this;
-    this.stompClient.connect({}, function (frame) {
-      that.stompClient.subscribe('/user/msg', (message) => {
-        const str = message.body;
+    this.stompClient = this.socialRealtime.connect((client) => {
+      this.socialRealtime.subscribeUserMessages(client, (str) => {
 
         const i = str.indexOf(':');
         const author = str.substring(0, i);
-        console.log(that.login);
-        if (author === that.interlocutor) {
+        if (author === this.interlocutor) {
           const msg = str.substring(i + 1, str.length);
           const messg = new Message();
           const tempSendr = new User();
-          tempSendr.login = that.login;
+          tempSendr.login = this.login;
           const tempRecvr = new User();
-          tempRecvr.login = that.interlocutor;
+          tempRecvr.login = this.interlocutor;
           messg.sender = tempRecvr;
           messg.receiver = tempSendr;
           messg.message = msg;
           messg.isRead = true;
-          that.messages.push(messg);
+          this.messages.push(messg);
         }
       });
     });
+  }
+
+  ngOnDestroy(): void {
+    this.socialRealtime.disconnect(this.stompClient);
+  }
+
+  goBack(): void {
+    this.router.navigateByUrl('messages');
   }
 
 }

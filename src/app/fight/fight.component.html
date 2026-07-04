@@ -6,7 +6,7 @@
   </div>
   <div class="container">
     <p class="label">{{'Attacks'| translate}}: </p>
-    <div id="attacks" [@turn]="current === parent.login ? 'enabled' : 'disabled'">
+    <div id="attacks" [@turn]="current === currentUsername ? 'enabled' : 'disabled'">
       @for (skill of skills; track skill) {
         <div class="attack">
           <div
