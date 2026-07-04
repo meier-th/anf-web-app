@@ -22,6 +22,10 @@ export class ProfileApiService {
     return this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true});
   }
 
+  getPveHistory(): Observable<any[]> {
+    return this.http.get<any[]>(this.apiConfig.buildUrl('/profile/pvehistory'), {withCredentials: true});
+  }
+
   getStats(login: string): Observable<Stats> {
     return this.http.get<Stats>(this.apiConfig.buildUrl(`/users/${login}/stats`), {withCredentials: true});
   }

@@ -1,4 +1,5 @@
 import {Injectable} from '@angular/core';
+import {NinjaAnimal} from '../../classes/ninja-animal';
 import {User} from '../../classes/user';
 import {FIGHT_CONSTANTS} from '../constants/app.constants';
 
@@ -6,6 +7,51 @@ import {FIGHT_CONSTANTS} from '../constants/app.constants';
   providedIn: 'root'
 })
 export class FightDomainService {
+  /**
+   * Animal tokens/names are correlated across roster, DOM, and websocket
+   * payloads by their first 3 characters (backend convention).
+   */
+  getAnimalStatsKey(tokenOrName: string): string {
+    return (tokenOrName ?? '').substring(0, 3).toLowerCase();
+  }
+
+  getAnimalSideKey(tokenOrName: string, ally: boolean): string {
+    return `${ally ? 'ally' : 'enemy'}:${this.getAnimalStatsKey(tokenOrName)}`;
+  }
+
+  getAnimalElementSideKey(tokenOrName: string, ally: boolean): string {
+    return `${ally ? 'ally' : 'enemy'}:${tokenOrName ?? ''}`;
+  }
+
+  sideFromAnimalToken(token: string): 'ally' | 'enemy' | undefined {
+    const marker = (token ?? '').length > 3 ? token.charAt(3) : '';
+    if (marker === '1') {
+      return 'ally';
+    }
+    if (marker === '0') {
+      return 'enemy';
+    }
+    return undefined;
+  }
+
+  findAnimalByToken(list: NinjaAnimal[], tokenOrName: string): NinjaAnimal | undefined {
+    const key = this.getAnimalStatsKey(tokenOrName).toLowerCase();
+    return list.find((animal) => this.getAnimalStatsKey(animal.name).toLowerCase() === key);
+  }
+
+  /**
+   * Backend PvP animal slots are keyed by canonical side: marker '1' =>
+   * animals1, marker '0' => animals2. If the current user is backend
+   * fighter2, enemy animals live in animals1, so the marker flips.
+   */
+  buildAnimalTargetToken(tokenOrName: string, ally: boolean, isPvp: boolean, pvpCurrentUserIsBackendSecond: boolean): string {
+    if (isPvp && !ally) {
+      const enemyMarker = pvpCurrentUserIsBackendSecond ? '1' : '0';
+      return `${this.getAnimalStatsKey(tokenOrName)}${enemyMarker}`;
+    }
+    return `${this.getAnimalStatsKey(tokenOrName)}${ally ? '1' : '0'}`;
+  }
+
   readNumber(source: any, ...keys: string[]): number | undefined {
     if (!source) {
       return undefined;
