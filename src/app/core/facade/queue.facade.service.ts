@@ -242,18 +242,17 @@ export class QueueFacadeService {
       clearInterval(this.pollLobbyId);
       this.pollLobbyId = null;
     }
-    if (!this.lobbyUuid || this.started || this.router.url.startsWith('/fight/')) {
+    if (!this.lobbyUuid) {
       return;
     }
-    if (this.isLeader) {
-      this.lobbyApi.deleteLobby(this.lobbyUuid).subscribe({
-        error: (_error: HttpErrorResponse) => {}
-      });
+    if (this.started || this.router.url.startsWith('/fight/')) {
+      this.clearCurrentLobbyState();
       return;
     }
-    this.lobbyApi.leaveLobby(this.lobbyUuid).subscribe({
-      error: (_error: HttpErrorResponse) => {}
-    });
+    const lobbyToLeave = this.lobbyUuid;
+    const request = this.isLeader ? this.lobbyApi.deleteLobby(lobbyToLeave) : this.lobbyApi.leaveLobby(lobbyToLeave);
+    request.subscribe({error: (_error: HttpErrorResponse) => {}});
+    this.clearCurrentLobbyState();
   }
 
   private clearCurrentLobbyState(): void {
@@ -263,5 +262,6 @@ export class QueueFacadeService {
     this.isLeader = false;
     this.disabled = true;
     this.copyFeedback = '';
+    this.started = false;
   }
 }
