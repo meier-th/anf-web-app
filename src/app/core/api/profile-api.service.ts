@@ -22,9 +22,10 @@ export class ProfileApiService {
 
   // Several unrelated features (profile page, chat, users list, dialogue, fight
   // outcome) all read the same profile on load. shareReplay lets concurrent
-  // callers share one in-flight request instead of each firing their own; once
-  // every subscriber has completed, refCount resets it so later calls still
-  // get fresh data.
+  // callers share one in-flight request instead of each firing their own.
+  // The cached observable keeps replaying the same value to every future
+  // caller regardless of refCount, so callers must invalidate it via
+  // clearCache() whenever the logged-in user changes (see MainFacadeService).
   getProfile(): Observable<User> {
     if (!this.profile$) {
       this.profile$ = this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true}).pipe(
@@ -32,6 +33,10 @@ export class ProfileApiService {
       );
     }
     return this.profile$;
+  }
+
+  clearCache(): void {
+    this.profile$ = null;
   }
 
   getPveHistory(): Observable<any[]> {

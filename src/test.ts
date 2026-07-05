@@ -18,3 +18,4 @@ import './app/core/state/session.store.unit.spec';
 import './app/core/domain/fight-combat-resolver.service.unit.spec';
 import './app/core/facade/queue.facade.service.unit.spec';
 import './app/core/facade/fight-session.service.unit.spec';
+import './app/core/api/profile-api.service.unit.spec';

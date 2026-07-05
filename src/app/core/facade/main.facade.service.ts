@@ -9,6 +9,7 @@ import {RoomComponent} from '../../room/room.component';
 import {TranslateService} from '../../services/translate.service';
 import {TranslatePipe} from '../../services/translate.pipe';
 import {AuthApiService} from '../api/auth-api.service';
+import {ProfileApiService} from '../api/profile-api.service';
 import {SessionStore} from '../state/session.store';
 import {InviteRealtimeService} from '../realtime/invite-realtime.service';
 import {FightApiService} from '../api/fight-api.service';
@@ -33,6 +34,7 @@ export class MainFacadeService {
     private dialogService: DialogService,
     private cookieService: CookieService,
     private authApi: AuthApiService,
+    private profileApi: ProfileApiService,
     private messageService: MessageService,
     private fightService: FightService,
     private translate: TranslateService,
@@ -115,6 +117,7 @@ export class MainFacadeService {
     if (username) {
       this.login = username;
     }
+    this.profileApi.clearCache();
     this.messageService.add({
       severity: 'success',
       summary: this.pipe.transform(APP_MESSAGES.toastSuccess),
@@ -133,6 +136,7 @@ export class MainFacadeService {
     this.loggedIn = true;
     this.login = username;
     this.sessionStore.setSession(true, username);
+    this.profileApi.clearCache();
   }
 
   logout() {
@@ -140,6 +144,7 @@ export class MainFacadeService {
     this.authApi.logout().subscribe();
     this.loggedIn = false;
     this.sessionStore.clearSession();
+    this.profileApi.clearCache();
     this.stopOnlineHeartbeat();
     this.router.navigateByUrl('start');
     this.cookieService.delete('loggedIn');
