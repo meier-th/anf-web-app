@@ -1,6 +1,7 @@
 import {Injectable, computed, signal} from '@angular/core';
 import {Boss} from '../../classes/boss';
 import {NinjaAnimal} from '../../classes/ninja-animal';
+import {SpellHandling} from '../../classes/spell-handling';
 import {User} from '../../classes/user';
 import {TranslatePipe} from '../../services/translate.pipe';
 import {FightApiService} from '../api/fight-api.service';
@@ -10,6 +11,15 @@ import {FightDomainService} from '../domain/fight-domain.service';
 import {SessionStore} from '../state/session.store';
 import {FightStateStore} from '../state/fight-state.store';
 import {FightSceneService} from '../ui/fight-scene.service';
+
+/** Spell damage/chakra at the handling's current spell level, matching the backend's FightDamageService formula. */
+export function scaledSpellStats(handling: SpellHandling): { damage: number; chakra: number } {
+  const spell = handling.spellUse;
+  return {
+    damage: spell.baseDamage + handling.spellLevel * spell.damagePerLevel,
+    chakra: Math.max(0, spell.baseChakraConsumption - handling.spellLevel * spell.chakraConsumptionPerLevel)
+  };
+}
 
 /**
  * API-facing use-case coordinator: loads fight data, performs attack/summon
@@ -134,9 +144,7 @@ export class FightSessionService {
         '\n' + this.transl.transform('Chakra') + ': 0';
       (data.fighters1.character.spellsKnown ?? []).forEach((it) => {
         skills.push(it.spellUse.name);
-        map[it.spellUse.name] = it.spellUse.name +
-          '\n' + this.transl.transform('Damage') + ':' + (it.spellUse.baseDamage) +
-          '\n' + this.transl.transform('Chakra') + ': ' + it.spellUse.baseChakraConsumption;
+        map[it.spellUse.name] = this.skillTooltip(it);
       });
       this.stateStore.setSkills(skills, map);
       this.stateStore.setLoaded(true);
@@ -169,10 +177,7 @@ export class FightSessionService {
         (localFighter?.character?.physicalDamage ?? 0) + '\n' + this.transl.transform('Chakra') + ': 0';
       (localFighter?.character?.spellsKnown ?? []).forEach((it) => {
         skills.push(it.spellUse.name);
-        map[it.spellUse.name] = it.spellUse.name +
-          '\n' + this.transl.transform('Damage') + ': ' +
-          (it.spellUse.baseDamage) + '\n' + this.transl.transform('Chakra') +
-          ': ' + it.spellUse.baseChakraConsumption;
+        map[it.spellUse.name] = this.skillTooltip(it);
       });
       this.stateStore.setSkills(skills, map);
       this.stateStore.setLoaded(true);
@@ -186,6 +191,13 @@ export class FightSessionService {
         }
       });
     });
+  }
+
+  private skillTooltip(handling: SpellHandling): string {
+    const {damage, chakra} = scaledSpellStats(handling);
+    return handling.spellUse.name +
+      '\n' + this.transl.transform('Damage') + ': ' + damage +
+      '\n' + this.transl.transform('Chakra') + ': ' + chakra;
   }
 
   private seedMaxStats(fighter: User): void {
