@@ -3,7 +3,24 @@ export const LANGUAGES = [
   {code: 'fr', label: 'French', flag: '🇫🇷'},
   {code: 'de', label: 'German', flag: '🇩🇪'},
   {code: 'ja', label: 'Japanese', flag: '🇯🇵'},
-  {code: 'el', label: 'Greek', flag: '🇬🇷'}
+  {code: 'el', label: 'Greek', flag: '🇬🇷'},
+  {code: 'es', label: 'Spanish', flag: '🇪🇸'},
+  {code: 'pt', label: 'Portuguese', flag: '🇵🇹'},
+  {code: 'it', label: 'Italian', flag: '🇮🇹'},
+  {code: 'nl', label: 'Dutch', flag: '🇳🇱'},
+  {code: 'sv', label: 'Swedish', flag: '🇸🇪'},
+  {code: 'fi', label: 'Finnish', flag: '🇫🇮'},
+  {code: 'no', label: 'Norwegian', flag: '🇳🇴'},
+  {code: 'ko', label: 'Korean', flag: '🇰🇷'},
+  {code: 'zh', label: 'Chinese', flag: '🇨🇳'},
+  {code: 'vi', label: 'Vietnamese', flag: '🇻🇳'},
+  {code: 'th', label: 'Thai', flag: '🇹🇭'},
+  {code: 'ga', label: 'Irish', flag: '🇮🇪'},
+  {code: 'ro', label: 'Romanian', flag: '🇷🇴'},
+  {code: 'hu', label: 'Hungarian', flag: '🇭🇺'},
+  {code: 'et', label: 'Estonian', flag: '🇪🇪'},
+  {code: 'lv', label: 'Latvian', flag: '🇱🇻'},
+  {code: 'lt', label: 'Lithuanian', flag: '🇱🇹'}
 ] as const;
 
 export type LanguageCode = typeof LANGUAGES[number]['code'];
