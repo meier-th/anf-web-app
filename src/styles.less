@@ -1,6 +1,10 @@
 @font-face {
   font-family: "kek";
   src: url("assets/12489.ttf");
+  /* ponytail: kek's cmap claims Greek/CJK support but those glyphs are empty outlines,
+     so the browser won't auto-fallback for them. Restricting the range it claims to
+     Latin (covers en/fr/de) forces a real fallback font for el/ja text instead. */
+  unicode-range: U+0000-00FF;
 }
 
 body {
@@ -9,7 +13,7 @@ body {
 
 * {
   font-weight: bold;
-  font-family: kek;
+  font-family: kek, Arial, "Helvetica Neue", sans-serif;
 }
 
 /* Ensure password masking glyphs remain visible with the custom global font. */

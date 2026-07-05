@@ -194,7 +194,7 @@ export class FightFacadeService {
 
     this.stateStore.logDebug(`WS ${roster.type.toUpperCase()} ${event.attacker} -> ${event.target} (${event.attackName}) dmg=${event.damage}`);
     this.announcementsService.schedule(
-      `${event.attacker} attacked ${event.target} for ${event.damage} (${event.attackName})`,
+      `${event.attacker} ${this.transl.transform('attacked')} ${event.target} ${this.transl.transform('for')} ${event.damage} (${event.attackName})`,
       resolved.attacker.kind === 'animal');
     this.stateStore.logAttackEvent(`${event.attacker} -> ${event.target}: ${event.damage} (${event.attackName})`);
     this.session.startTurnTimer(event.nextAttacker, APP_TIMINGS.fightTurnWindowMs);

@@ -4,6 +4,7 @@ import {MessageService} from 'primeng/api';
 import {DialogService} from 'primeng/dynamicdialog';
 import {TranslatePipe} from '../services/translate.pipe';
 import {MainFacadeService} from '../core/facade/main.facade.service';
+import {LanguageCode} from '../core/constants/app.constants';
 import { Bind } from 'primeng/bind';
 import { Button } from 'primeng/button';
 
@@ -26,7 +27,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.facade.toggleLanguageMenu(event);
   }
 
-  setLanguage(language: 'en' | 'ru'): void {
+  setLanguage(language: LanguageCode): void {
     this.facade.setLanguage(language);
   }
 
@@ -77,6 +78,10 @@ export class MainComponent implements OnInit, OnDestroy {
   set display(value: boolean) { this.facade.display = value; }
   get showSurrenderConfirm(): boolean { return this.facade.showSurrenderConfirm; }
   get languageMenuOpen(): boolean { return this.facade.languageMenuOpen; }
-  get currentLanguage(): 'en' | 'ru' { return this.facade.currentLanguage; }
+  get currentLanguage(): LanguageCode { return this.facade.currentLanguage; }
+  get languages() { return this.facade.languages; }
+  get currentFlag(): string {
+    return this.languages.find(lang => lang.code === this.currentLanguage)?.flag ?? '';
+  }
 
 }

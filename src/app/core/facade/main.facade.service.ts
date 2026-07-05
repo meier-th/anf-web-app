@@ -13,18 +13,18 @@ import {SessionStore} from '../state/session.store';
 import {InviteRealtimeService} from '../realtime/invite-realtime.service';
 import {FightApiService} from '../api/fight-api.service';
 import {FightService} from '../../services/fight/fight.service';
-import {APP_MESSAGES, APP_TIMINGS, DIALOG_SIZES} from '../constants/app.constants';
+import {APP_MESSAGES, APP_TIMINGS, DIALOG_SIZES, LANGUAGES, LanguageCode} from '../constants/app.constants';
 
 @Injectable()
 export class MainFacadeService {
+  readonly languages = LANGUAGES;
   loggedIn = false;
   login = '';
   dialog: DynamicDialogRef | undefined;
-  russian = false;
   display = false;
   showSurrenderConfirm = false;
   languageMenuOpen = false;
-  currentLanguage: 'en' | 'ru' = 'en';
+  currentLanguage: LanguageCode = 'en';
   private stompClient: CompatClient | undefined;
   private onlineHeartbeatId: ReturnType<typeof setInterval> | null = null;
 
@@ -68,7 +68,9 @@ export class MainFacadeService {
       });
     }
     this.initializeWebsockets();
-    this.setLanguage(this.russian ? 'ru' : 'en');
+    const savedLanguage = this.cookieService.get('language');
+    const isKnownLanguage = this.languages.some(lang => lang.code === savedLanguage);
+    this.setLanguage(isKnownLanguage ? savedLanguage as LanguageCode : 'en');
   }
 
   destroy(): void {
@@ -84,11 +86,11 @@ export class MainFacadeService {
     this.languageMenuOpen = !this.languageMenuOpen;
   }
 
-  setLanguage(language: 'en' | 'ru'): void {
+  setLanguage(language: LanguageCode): void {
     this.currentLanguage = language;
-    this.russian = language === 'ru';
     this.translate.use(language);
     this.languageMenuOpen = false;
+    this.cookieService.set('language', language);
   }
 
   closeLanguageMenu(): void {

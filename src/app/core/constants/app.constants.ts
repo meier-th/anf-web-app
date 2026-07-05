@@ -1,3 +1,13 @@
+export const LANGUAGES = [
+  {code: 'en', label: 'English', flag: '🇬🇧'},
+  {code: 'fr', label: 'French', flag: '🇫🇷'},
+  {code: 'de', label: 'German', flag: '🇩🇪'},
+  {code: 'ja', label: 'Japanese', flag: '🇯🇵'},
+  {code: 'el', label: 'Greek', flag: '🇬🇷'}
+] as const;
+
+export type LanguageCode = typeof LANGUAGES[number]['code'];
+
 export const APP_TIMINGS = {
   onlineHeartbeatMs: 120000,
   readyAutoOffMs: 300000,

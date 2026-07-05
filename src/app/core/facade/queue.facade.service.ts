@@ -5,6 +5,7 @@ import {CookieService} from 'ngx-cookie-service';
 import {AreaService} from '../../services/area/area.service';
 import {FightService} from '../../services/fight/fight.service';
 import {LobbyApiService} from '../api/lobby-api.service';
+import {TranslatePipe} from '../../services/translate.pipe';
 import {APP_MESSAGES, APP_TIMINGS} from '../constants/app.constants';
 
 @Injectable({
@@ -31,7 +32,7 @@ export class QueueFacadeService {
   joinLobbyUuid = '';
   isLeader = false;
   expectedPlayers = 1;
-  statusMessage: string = APP_MESSAGES.queuePreparing;
+  statusMessage: string;
   copyFeedback = '';
   started = false;
 
@@ -44,9 +45,11 @@ export class QueueFacadeService {
     private cookieService: CookieService,
     private fightService: FightService,
     private lobbyApi: LobbyApiService,
-    private router: Router
+    private router: Router,
+    private transl: TranslatePipe
   ) {
     this.username = this.cookieService.get('username');
+    this.statusMessage = this.transl.transform(APP_MESSAGES.queuePreparing);
   }
 
   init(onFightStarted?: () => void): void {
@@ -59,7 +62,7 @@ export class QueueFacadeService {
       this.users = data.filter((item) => item !== this.cookieService.get('username'));
     });
     if (this.isPvpLobbyMode) {
-      this.statusMessage = APP_MESSAGES.queueSelectOrCreate;
+      this.statusMessage = this.transl.transform(APP_MESSAGES.queueSelectOrCreate);
       this.loadOpenLobbies();
       return;
     }
@@ -84,14 +87,14 @@ export class QueueFacadeService {
 
   createLobby(): void {
     if (this.lobbyUuid) {
-      this.statusMessage = APP_MESSAGES.queueAlreadyInLobby;
+      this.statusMessage = this.transl.transform(APP_MESSAGES.queueAlreadyInLobby);
       return;
     }
     this.lobbyApi.createLobby(this.areaService.pvp ? 'PVP' : 'TEAM_PVE').subscribe((response) => {
       this.lobbyUuid = response.lobbyUuid;
       this.id = response.lobbyUuid;
       this.isLeader = true;
-      this.statusMessage = APP_MESSAGES.queueCreated;
+      this.statusMessage = this.transl.transform(APP_MESSAGES.queueCreated);
       this.refreshLobby();
       this.startLobbyPolling();
       this.loadOpenLobbies();
@@ -112,7 +115,7 @@ export class QueueFacadeService {
       next: () => {
         this.clearCurrentLobbyState();
         if (this.isPvpLobbyMode) {
-          this.statusMessage = APP_MESSAGES.queueSelectOrCreate;
+          this.statusMessage = this.transl.transform(APP_MESSAGES.queueSelectOrCreate);
           this.loadOpenLobbies();
         }
       },
@@ -120,7 +123,7 @@ export class QueueFacadeService {
         if (error.status === 404) {
           this.clearCurrentLobbyState();
           if (this.isPvpLobbyMode) {
-            this.statusMessage = APP_MESSAGES.queueSelectOrCreate;
+            this.statusMessage = this.transl.transform(APP_MESSAGES.queueSelectOrCreate);
             this.loadOpenLobbies();
           }
         }
@@ -157,7 +160,7 @@ export class QueueFacadeService {
     }
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(this.lobbyUuid).then(() => {
-        this.copyFeedback = APP_MESSAGES.lobbyCodeCopied;
+        this.copyFeedback = this.transl.transform(APP_MESSAGES.lobbyCodeCopied);
       }).catch(() => {
         this.copyFallback();
       });
@@ -192,13 +195,13 @@ export class QueueFacadeService {
 
   private joinLobbyByUuid(lobbyUuid: string): void {
     if (this.lobbyUuid && this.lobbyUuid !== lobbyUuid) {
-      this.statusMessage = APP_MESSAGES.queueLeaveCurrentFirst;
+      this.statusMessage = this.transl.transform(APP_MESSAGES.queueLeaveCurrentFirst);
       return;
     }
     this.lobbyApi.joinLobby(lobbyUuid).subscribe(() => {
       this.lobbyUuid = lobbyUuid;
       this.id = lobbyUuid;
-      this.statusMessage = APP_MESSAGES.queueJoined;
+      this.statusMessage = this.transl.transform(APP_MESSAGES.queueJoined);
       this.refreshLobby();
       this.startLobbyPolling();
       this.loadOpenLobbies();
@@ -212,24 +215,24 @@ export class QueueFacadeService {
     input.select();
     try {
       document.execCommand('copy');
-      this.copyFeedback = APP_MESSAGES.lobbyCodeCopied;
+      this.copyFeedback = this.transl.transform(APP_MESSAGES.lobbyCodeCopied);
     } catch {
-      this.copyFeedback = APP_MESSAGES.queueCopyFailed;
+      this.copyFeedback = this.transl.transform(APP_MESSAGES.queueCopyFailed);
     }
     document.body.removeChild(input);
   }
 
   private buildStatusMessage(): string {
     if (!this.lobbyUuid) {
-      return APP_MESSAGES.queuePreparing;
+      return this.transl.transform(APP_MESSAGES.queuePreparing);
     }
     if (!this.isLeader) {
-      return `Waiting for leader. ${this.players.length}/${this.expectedPlayers} players in lobby.`;
+      return `${this.transl.transform('Waiting for leader.')} ${this.players.length}/${this.expectedPlayers} ${this.transl.transform('players in lobby.')}`;
     }
     if (this.players.length < this.expectedPlayers) {
-      return `Waiting for players: ${this.players.length}/${this.expectedPlayers}.`;
+      return `${this.transl.transform('Waiting for players:')} ${this.players.length}/${this.expectedPlayers}.`;
     }
-    return APP_MESSAGES.queueReadyToStart;
+    return this.transl.transform(APP_MESSAGES.queueReadyToStart);
   }
 
   private startLobbyPolling(): void {

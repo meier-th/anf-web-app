@@ -4,7 +4,7 @@
     <div class="win">{{'Win' | translate}}</div>
   }
   @if (loss) {
-    <div class="loss">{{'loss' | translate}}</div>
+    <div class="loss">{{'Loss' | translate}}</div>
   }
   @if (surrendered) {
     <div class="surrender-label">{{'Fight ended by surrender' | translate}}</div>
@@ -18,5 +18,5 @@
       {{ ratingChange > 0 ? '+' : '' }}{{ratingChange}}
     </span>
   </div>
-  <button type="button" class="ok-btn" (click)="onConfirm()">OK</button>
+  <button type="button" class="ok-btn" (click)="onConfirm()">{{'OK' | translate}}</button>
 </div>

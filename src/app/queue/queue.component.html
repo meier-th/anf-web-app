@@ -8,17 +8,17 @@
     <div class="section-card">
       <div class="lobby-code-row">
         <div class="code-text">
-          <span class="label">Your lobby code</span>
+          <span class="label">{{'Your lobby code' | translate}}</span>
           <span class="value">{{ lobbyUuid || '-' }}</span>
         </div>
         <p-button
-          label="Copy code"
+          label="{{'Copy code' | translate}}"
           styleClass="lobby-action-btn secondary"
           [disabled]="!lobbyUuid"
           (onClick)="copyLobbyCode()">
         </p-button>
       </div>
-      <p class="hint">Share this code with players so they can join.</p>
+      <p class="hint">{{'Share this code with players so they can join.' | translate}}</p>
       @if (copyFeedback) {
       <p class="feedback">{{ copyFeedback }}</p>
       }
@@ -33,10 +33,10 @@
         <input
           type="text"
           [(ngModel)]="joinLobbyUuid"
-          placeholder="Lobby code"
+          placeholder="{{'Lobby code' | translate}}"
         />
         <p-button
-          label="Join"
+          label="{{'Join' | translate}}"
           styleClass="lobby-action-btn"
           (onClick)="joinLobby()">
         </p-button>
@@ -46,16 +46,16 @@
 
     @if (isPvpLobbyMode && !lobbyUuid) {
     <div class="section-card">
-      <p class="players-count">Open lobbies</p>
+      <p class="players-count">{{'Open lobbies' | translate}}</p>
       <div class="open-lobbies">
         @for (lobby of openLobbies; track lobby.lobbyUuid) {
         <div class="lobby-row">
           <div class="lobby-meta">
             <span class="lobby-uuid">{{ lobby.lobbyUuid }}</span>
-            <span class="lobby-players">{{ lobby.playerCount }}/{{ lobby.capacity }} players</span>
+            <span class="lobby-players">{{ lobby.playerCount }}/{{ lobby.capacity }} {{'players' | translate}}</span>
           </div>
           <p-button
-            label="Join"
+            label="{{'Join' | translate}}"
             styleClass="lobby-action-btn secondary join-btn"
             [disabled]="!!lobbyUuid && lobbyUuid !== lobby.lobbyUuid"
             (onClick)="joinExistingLobby(lobby.lobbyUuid)">
@@ -63,7 +63,7 @@
         </div>
         }
         @if (openLobbies.length === 0) {
-        <p class="hint">No open lobbies right now.</p>
+        <p class="hint">{{'No open lobbies right now.' | translate}}</p>
         }
       </div>
     </div>
@@ -71,7 +71,7 @@
 
     @if (lobbyUuid) {
     <div class="section-card">
-      <p class="players-count">Players in lobby: {{ players.length }}/{{ expectedPlayers }}</p>
+      <p class="players-count">{{'Players in lobby:' | translate}} {{ players.length }}/{{ expectedPlayers }}</p>
       <ul class="players-list">
         @for (player of players; track player) {
         <li>{{ player }}</li>
@@ -90,7 +90,7 @@
         (onClick)="startFight()">
       </p-button>
       <p-button
-        label="Leave lobby"
+        label="{{'Leave lobby' | translate}}"
         styleClass="lobby-action-btn secondary"
         (onClick)="leaveLobby()">
       </p-button>
@@ -100,13 +100,13 @@
     @if (isPvpLobbyMode && !lobbyUuid) {
     <div class="actions-row pvp-browser-actions">
       <p-button
-        label="Create lobby"
+        label="{{'Create lobby' | translate}}"
         styleClass="lobby-action-btn primary"
         [disabled]="!!lobbyUuid"
         (onClick)="createLobby()">
       </p-button>
       <p-button
-        label="Refresh lobbies"
+        label="{{'Refresh lobbies' | translate}}"
         styleClass="lobby-action-btn secondary"
         (onClick)="loadOpenLobbies()">
       </p-button>

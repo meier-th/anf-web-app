@@ -55,10 +55,10 @@
               <p>{{'Gender:' | translate}} {{appearance.gender | translate}}</p>
               <div class="choice-row">
                 <button type="button" class="choice-btn" [class.active]="appearance.gender === 'MALE'" (click)="selectGender('MALE')">
-                  {{'Male' | translate}}
+                  {{'MALE' | translate}}
                 </button>
                 <button type="button" class="choice-btn" [class.active]="appearance.gender === 'FEMALE'" (click)="selectGender('FEMALE')">
-                  {{'Female' | translate}}
+                  {{'FEMALE' | translate}}
                 </button>
               </div>
             </div>

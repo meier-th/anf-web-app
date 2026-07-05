@@ -4,19 +4,17 @@
   <div class="menu">
     <div class="pages language-tab" [class.open]="languageMenuOpen">
       <button type="button" class="lang-trigger" (click)="toggleLanguageMenu($event)">
-        <span class="flag-icon">{{currentLanguage === 'ru' ? '🇷🇺' : '🇬🇧'}}</span>
+        <span class="flag-icon">{{currentFlag}}</span>
         <span>{{'Language' | translate}}</span>
       </button>
       @if (languageMenuOpen) {
         <div class="lang-menu">
-          <button type="button" class="lang-option" (click)="setLanguage('en')">
-            <span class="flag-icon">🇬🇧</span>
-            <span>{{'English' | translate}}</span>
-          </button>
-          <button type="button" class="lang-option" (click)="setLanguage('ru')">
-            <span class="flag-icon">🇷🇺</span>
-            <span>{{'Russian' | translate}}</span>
-          </button>
+          @for (lang of languages; track lang.code) {
+            <button type="button" class="lang-option" (click)="setLanguage(lang.code)">
+              <span class="flag-icon">{{lang.flag}}</span>
+              <span>{{lang.label | translate}}</span>
+            </button>
+          }
         </div>
       }
     </div>
@@ -74,19 +72,17 @@
 <div class="account-controls">
   <div class="language-tab" [class.open]="languageMenuOpen">
     <button type="button" class="lang-trigger" (click)="toggleLanguageMenu($event)">
-      <span class="flag-icon">{{currentLanguage === 'ru' ? '🇷🇺' : '🇬🇧'}}</span>
+      <span class="flag-icon">{{currentFlag}}</span>
       <span>{{'Language' | translate}}</span>
     </button>
     @if (languageMenuOpen) {
       <div class="lang-menu">
-        <button type="button" class="lang-option" (click)="setLanguage('en')">
-          <span class="flag-icon">🇬🇧</span>
-          <span>{{'English' | translate}}</span>
-        </button>
-        <button type="button" class="lang-option" (click)="setLanguage('ru')">
-          <span class="flag-icon">🇷🇺</span>
-          <span>{{'Russian' | translate}}</span>
-        </button>
+        @for (lang of languages; track lang.code) {
+          <button type="button" class="lang-option" (click)="setLanguage(lang.code)">
+            <span class="flag-icon">{{lang.flag}}</span>
+            <span>{{lang.label | translate}}</span>
+          </button>
+        }
       </div>
     }
   </div>

@@ -5,6 +5,7 @@ import {CookieService} from 'ngx-cookie-service';
 import {FightService} from '../../services/fight/fight.service';
 import {LobbyApiService} from '../api/lobby-api.service';
 import {Router} from '@angular/router';
+import {TranslatePipe} from '../../services/translate.pipe';
 
 describe('QueueFacadeService', () => {
   function buildFacade(lobbyUuids: string[]) {
@@ -25,7 +26,8 @@ describe('QueueFacadeService', () => {
       {get: () => 'user1'} as unknown as CookieService,
       {type: '', id: '', valuesSet: false} as FightService,
       lobbyApi,
-      router
+      router,
+      {transform: (key: string) => key} as TranslatePipe
     );
     return {facade, router};
   }
