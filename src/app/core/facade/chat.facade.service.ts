@@ -1,11 +1,11 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {CompatClient, Stomp} from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+import {CompatClient} from '@stomp/stompjs';
 import {ApiConfigService} from '../config/api-config.service';
+import {WebsocketGatewayService} from '../realtime/websocket-gateway.service';
 import {ChatMessage} from '../../classes/chat-message';
 import {User} from '../../classes/user';
-import {APP_MESSAGES, APP_TIMINGS} from '../constants/app.constants';
+import {APP_MESSAGES} from '../constants/app.constants';
 
 type PendingChatMessage = {
   text: string;
@@ -20,16 +20,16 @@ export class ChatFacadeService {
   admin = false;
   private asSystem = false;
 
-  private socketUrls: string[];
-  private socketUrlIndex = 0;
   private stompClient: CompatClient | null = null;
   private stompConnected = false;
-  private connecting = false;
+  private acquired = false;
   private pendingMessages: PendingChatMessage[] = [];
 
-  constructor(private http: HttpClient, private apiConfig: ApiConfigService) {
-    this.socketUrls = this.buildSocketUrls();
-  }
+  constructor(
+    private http: HttpClient,
+    private apiConfig: ApiConfigService,
+    private wsGateway: WebsocketGatewayService
+  ) {}
 
   setAsSystem(value: boolean): void {
     this.asSystem = value;
@@ -61,12 +61,12 @@ export class ChatFacadeService {
   }
 
   dispose(): void {
-    if (this.stompClient?.connected) {
-      this.stompClient.disconnect(() => {});
+    if (this.acquired) {
+      this.wsGateway.release();
+      this.acquired = false;
     }
     this.stompClient = null;
     this.stompConnected = false;
-    this.connecting = false;
   }
 
   send(input: string): string {
@@ -89,7 +89,7 @@ export class ChatFacadeService {
     }
 
     const txt = `${this.user.login}: ${normalizedInput}`;
-    if (!this.stompClient || !this.stompConnected || !this.stompClient.connected) {
+    if (!this.stompConnected || !this.stompClient?.connected) {
       this.pendingMessages.push({text: txt});
       this.messages.push(new ChatMessage('SYSTEM', APP_MESSAGES.chatConnecting));
       this.initializeWebSocketConnection();
@@ -101,18 +101,13 @@ export class ChatFacadeService {
   }
 
   private initializeWebSocketConnection(): void {
-    if (this.connecting || this.stompConnected) {
+    if (this.acquired) {
       return;
     }
-    const socketUrl = this.socketUrls[this.socketUrlIndex] ?? this.socketUrls[0];
-    const ws = new SockJS(socketUrl);
-    this.stompClient = Stomp.over(ws);
-    this.stompConnected = false;
-    this.connecting = true;
-    this.stompClient.connect({}, () => {
+    this.acquired = true;
+    this.stompClient = this.wsGateway.acquire((client) => {
       this.stompConnected = true;
-      this.connecting = false;
-      this.stompClient?.subscribe('/chat', (message) => {
+      client.subscribe('/chat', (message) => {
         const str = message.body;
         const i = str.indexOf(':');
         if (i < 0) {
@@ -123,16 +118,11 @@ export class ChatFacadeService {
         this.messages.push(new ChatMessage(author, msg));
       });
       this.flushPendingMessages();
-    }, () => {
-      this.stompConnected = false;
-      this.connecting = false;
-      this.socketUrlIndex = (this.socketUrlIndex + 1) % this.socketUrls.length;
-      setTimeout(() => this.initializeWebSocketConnection(), APP_TIMINGS.chatReconnectMs);
     });
   }
 
   private flushPendingMessages(): void {
-    if (!this.stompClient || !this.stompConnected || !this.stompClient.connected) {
+    if (!this.stompConnected || !this.stompClient?.connected) {
       return;
     }
     while (this.pendingMessages.length > 0) {
@@ -141,15 +131,5 @@ export class ChatFacadeService {
         this.stompClient.send('/app/send/message', {}, queuedMessage.text);
       }
     }
-  }
-
-  private buildSocketUrls(): string[] {
-    const candidates = [
-      this.apiConfig.buildUrl('/socket'),
-      '/socket',
-      `${window.location.protocol}//${window.location.host}/socket`,
-      'http://localhost:8080/socket'
-    ];
-    return Array.from(new Set(candidates));
   }
 }

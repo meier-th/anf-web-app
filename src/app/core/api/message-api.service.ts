@@ -4,15 +4,20 @@ import {Observable} from 'rxjs';
 import {Message} from '../../classes/message';
 import {User} from '../../classes/user';
 import {ApiConfigService} from '../config/api-config.service';
+import {ProfileApiService} from './profile-api.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MessageApiService {
-  constructor(private http: HttpClient, private apiConfig: ApiConfigService) {}
+  constructor(
+    private http: HttpClient,
+    private apiConfig: ApiConfigService,
+    private profileApi: ProfileApiService
+  ) {}
 
   getProfile(): Observable<User> {
-    return this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true});
+    return this.profileApi.getProfile();
   }
 
   getDialogs(): Observable<string[]> {

@@ -140,6 +140,7 @@ export class FightSessionService {
       });
       this.stateStore.setSkills(skills, map);
       this.stateStore.setLoaded(true);
+      this.loadSummonPreviewIcon();
       const roster = this.stateStore.snapshotRoster();
       onReady(roster);
       animals1.forEach((animal) => this.scene.drawAnimal(animal, true));
@@ -175,6 +176,7 @@ export class FightSessionService {
       });
       this.stateStore.setSkills(skills, map);
       this.stateStore.setLoaded(true);
+      this.loadSummonPreviewIcon();
       const roster = this.stateStore.snapshotRoster();
       onReady(roster);
       (data.animals1 ?? []).forEach((animal) => {
@@ -265,6 +267,13 @@ export class FightSessionService {
         }
         this.timeoutReported = false;
       }
+    });
+  }
+
+  private loadSummonPreviewIcon(): void {
+    this.fightApi.getMyAnimal().subscribe({
+      next: (animal) => this.stateStore.setSummonPreviewName(animal?.name),
+      error: () => this.stateStore.setSummonPreviewName('')
     });
   }
 }

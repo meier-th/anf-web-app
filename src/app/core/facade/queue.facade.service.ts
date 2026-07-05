@@ -37,6 +37,7 @@ export class QueueFacadeService {
 
   private readonly username: string;
   private pollLobbyId: ReturnType<typeof setInterval> | null = null;
+  private onFightStarted?: () => void;
 
   constructor(
     private areaService: AreaService,
@@ -48,7 +49,8 @@ export class QueueFacadeService {
     this.username = this.cookieService.get('username');
   }
 
-  init(): void {
+  init(onFightStarted?: () => void): void {
+    this.onFightStarted = onFightStarted;
     this.area = this.areaService.selectedArea;
     this.type = this.areaService.pvp ? 'PVP' : 'PVE';
     this.isPvpLobbyMode = this.areaService.pvp;
@@ -140,7 +142,7 @@ export class QueueFacadeService {
       return;
     }
     this.lobbyApi.startFight(this.lobbyUuid, this.areaService.pvp ? undefined : this.area).subscribe((data) => {
-      this.started = true;
+      this.markFightStarted();
       this.fightService.type = this.areaService.pvp ? 'pvp' : 'pve';
       this.fightService.id = data.fightUuid;
       this.fightService.valuesSet = true;
@@ -178,7 +180,7 @@ export class QueueFacadeService {
       },
       error: (error: HttpErrorResponse) => {
         if (error.status === 404) {
-          this.started = true;
+          this.markFightStarted();
           if (this.pollLobbyId) {
             clearInterval(this.pollLobbyId);
             this.pollLobbyId = null;
@@ -263,5 +265,13 @@ export class QueueFacadeService {
     this.disabled = true;
     this.copyFeedback = '';
     this.started = false;
+  }
+
+  private markFightStarted(): void {
+    if (this.started) {
+      return;
+    }
+    this.started = true;
+    this.onFightStarted?.();
   }
 }

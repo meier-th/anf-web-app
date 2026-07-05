@@ -9,9 +9,7 @@ export class SocialRealtimeService {
   constructor(private wsGateway: WebsocketGatewayService) {}
 
   connect(onConnected: (client: CompatClient) => void): CompatClient {
-    const client = this.wsGateway.createClient();
-    client.connect({}, () => onConnected(client));
-    return client;
+    return this.wsGateway.acquire(onConnected);
   }
 
   subscribeOnline(client: CompatClient, handler: (body: string) => void): void {
@@ -31,8 +29,6 @@ export class SocialRealtimeService {
   }
 
   disconnect(client: CompatClient | null | undefined): void {
-    if (client?.connected) {
-      client.disconnect(() => {});
-    }
+    this.wsGateway.release();
   }
 }

@@ -104,6 +104,10 @@ export class FightFacadeService {
     if (this.stateStore.useSummonIconFallback()) {
       return '../../assets/summon.png';
     }
+    const previewAnimalName = this.stateStore.summonPreviewName();
+    if (previewAnimalName) {
+      return `../../assets/${previewAnimalName}.png`;
+    }
     const race = (this.stateStore.resolveLocalSummoner()?.character?.animalRace ?? '').trim().toLowerCase();
     const animalByRace = SUMMON_PREVIEW_BY_RACE[race];
     if (!animalByRace) {
@@ -291,7 +295,7 @@ export class FightFacadeService {
       return;
     }
     if (!resolved.yourSideAttacks) {
-      this.outcome.finishFight({death: false, victory: false, loss: true});
+      this.outcome.finishFight({death: this.stateStore.hasLocalPlayerDied(), victory: false, loss: true});
       return;
     }
     if (this.stateStore.hasLocalPlayerDied()) {

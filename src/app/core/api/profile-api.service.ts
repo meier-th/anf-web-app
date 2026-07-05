@@ -1,6 +1,6 @@
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import {Injectable} from '@angular/core';
-import {Observable} from 'rxjs';
+import {Observable, shareReplay} from 'rxjs';
 import {Stats} from '../../classes/stats';
 import {User} from '../../classes/user';
 import {ApiConfigService} from '../config/api-config.service';
@@ -16,10 +16,22 @@ export type AppearancePayload = {
   providedIn: 'root'
 })
 export class ProfileApiService {
+  private profile$: Observable<User> | null = null;
+
   constructor(private http: HttpClient, private apiConfig: ApiConfigService) {}
 
+  // Several unrelated features (profile page, chat, users list, dialogue, fight
+  // outcome) all read the same profile on load. shareReplay lets concurrent
+  // callers share one in-flight request instead of each firing their own; once
+  // every subscriber has completed, refCount resets it so later calls still
+  // get fresh data.
   getProfile(): Observable<User> {
-    return this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true});
+    if (!this.profile$) {
+      this.profile$ = this.http.get<User>(this.apiConfig.buildUrl('/profile'), {withCredentials: true}).pipe(
+        shareReplay({bufferSize: 1, refCount: true})
+      );
+    }
+    return this.profile$;
   }
 
   getPveHistory(): Observable<any[]> {

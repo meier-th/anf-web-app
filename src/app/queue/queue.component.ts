@@ -34,7 +34,7 @@ export class QueueComponent implements OnInit, OnDestroy {
   set joinLobbyUuid(value: string) { this.queueFacade.joinLobbyUuid = value; }
 
   ngOnInit() {
-    this.queueFacade.init();
+    this.queueFacade.init(() => this.dialogRef?.close());
   }
 
   joinLobby(): void {
@@ -58,7 +58,7 @@ export class QueueComponent implements OnInit, OnDestroy {
   }
 
   startFight() {
-    this.queueFacade.startFight(() => this.dialogRef?.close());
+    this.queueFacade.startFight();
   }
 
   closeLobby(): void {

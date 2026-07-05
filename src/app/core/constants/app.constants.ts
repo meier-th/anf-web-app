@@ -2,7 +2,6 @@ export const APP_TIMINGS = {
   onlineHeartbeatMs: 120000,
   readyAutoOffMs: 300000,
   lobbyPollMs: 3000,
-  chatReconnectMs: 1500,
   fightTurnTickMs: 30000,
   fightTurnWindowMs: 30200
 } as const;

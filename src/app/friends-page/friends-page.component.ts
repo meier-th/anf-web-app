@@ -1,4 +1,5 @@
 import {Component, NgZone, OnDestroy, OnInit} from '@angular/core';
+import {forkJoin} from 'rxjs';
 import {User} from '../classes/user';
 import {SingleMessageComponent} from '../single-message/single-message.component';
 import {ConfirmationService} from 'primeng/api';
@@ -44,12 +45,17 @@ export class FriendsPageComponent implements OnInit, OnDestroy {
       .subscribe(data => this.inRequested = data);
     this.socialApi.getOutgoingRequests()
       .subscribe(data => this.outRequested = data);
-    this.socialApi.getFriends()
-      .subscribe(data => {
-        this.friends = data;
-        this.checkOnline();
-        this.loadUnreadMessageCounts();
-      });
+    // Friends and ready-status don't depend on each other, so fetch both in
+    // parallel and only join them once both resolve, instead of waiting for
+    // friends before even starting the ready-status request.
+    forkJoin({
+      friends: this.socialApi.getFriends(),
+      ready: this.socialApi.getReadyUsers()
+    }).subscribe(({friends, ready}) => {
+      this.friends = friends;
+      this.applyOnlineStatus(ready);
+    });
+    this.loadUnreadMessageCounts();
 
     this.initializeWebSockets();
   }
@@ -186,15 +192,14 @@ export class FriendsPageComponent implements OnInit, OnDestroy {
       frnd.offline = true;
       frnd.online = false;
     });
-    this.socialApi.getReadyUsers()
-      .subscribe(result => {
-        this.friends.forEach(friend => {
-          if (result.includes(friend.login)) {
-            friend.online = true;
-            friend.offline = false;
-          }
-        });
-      });
+    this.socialApi.getReadyUsers().subscribe(result => this.applyOnlineStatus(result));
+  }
+
+  private applyOnlineStatus(readyLogins: string[]): void {
+    this.friends.forEach(friend => {
+      friend.online = readyLogins.includes(friend.login);
+      friend.offline = !friend.online;
+    });
   }
 
   declineReq(req: User): void {

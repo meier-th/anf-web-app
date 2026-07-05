@@ -93,17 +93,19 @@ export class FightOutcomeService {
       this.profileApi.getPveHistory().subscribe({
         next: (history) => {
           const latestResult = `${history?.[0]?.result ?? ''}`.toLowerCase();
+          const localPlayerDead = this.stateStore.hasLocalPlayerDied() || this.stateStore.isLocalPlayerDead();
           if (latestResult === 'win') {
             this.fightEndService.victory = true;
             this.fightEndService.loss = false;
             this.fightEndService.death = false;
           } else if (latestResult === 'died') {
             this.fightEndService.victory = false;
-            this.fightEndService.loss = false;
+            this.fightEndService.loss = true;
             this.fightEndService.death = true;
           } else if (latestResult === 'loss') {
             this.fightEndService.victory = false;
             this.fightEndService.loss = true;
+            this.fightEndService.death = localPlayerDead;
           }
           this._showResult.set(true);
         },

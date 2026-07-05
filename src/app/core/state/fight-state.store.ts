@@ -37,6 +37,7 @@ export class FightStateStore {
   private readonly _showDebugPanel = signal(false);
   private readonly _attackEvents = signal<string[]>([]);
   private readonly _localPlayerDead = signal(false);
+  private readonly _summonPreviewName = signal('');
 
   private readonly userMaxHp: { [login: string]: number } = {};
   private readonly userMaxChakra: { [login: string]: number } = {};
@@ -60,6 +61,7 @@ export class FightStateStore {
   readonly showDebugPanel = computed(() => this._showDebugPanel());
   readonly attackEvents = computed(() => this._attackEvents());
   readonly pvpCurrentUserIsBackendSecond = computed(() => this._pvpCurrentUserIsBackendSecond());
+  readonly summonPreviewName = computed(() => this._summonPreviewName());
 
   constructor(private fightDomain: FightDomainService, private sessionStore: SessionStore) {
   }
@@ -76,6 +78,7 @@ export class FightStateStore {
     this._selectedSpell.set(FIGHT_CONSTANTS.defaultSkill);
     this._debugLines.set([]);
     this._attackEvents.set([]);
+    this._summonPreviewName.set('');
   }
 
   setRoster(allies: User[], enemies: User[], animals1: NinjaAnimal[], animals2: NinjaAnimal[], boss?: Boss): void {
@@ -114,6 +117,10 @@ export class FightStateStore {
 
   setUseSummonIconFallback(useFallback: boolean): void {
     this._useSummonIconFallback.set(useFallback);
+  }
+
+  setSummonPreviewName(name: string | undefined): void {
+    this._summonPreviewName.set((name ?? '').trim().toLowerCase());
   }
 
   addSummonedAnimal(animal: NinjaAnimal, ally: boolean): boolean {
@@ -161,6 +168,9 @@ export class FightStateStore {
   resolveLocalSummonerLevel(): number {
     const summoner = this.resolveLocalSummoner();
     return this.fightDomain.readNumber(summoner?.stats, 'level')
+      ?? this.fightDomain.readNumber(summoner?.character, 'level', 'lvl')
+      ?? this.fightDomain.readNumber((summoner as any)?.character?.user?.stats, 'level', 'lvl')
+      ?? this.fightDomain.readNumber((summoner as any)?.user?.stats, 'level', 'lvl')
       ?? this.fightDomain.readNumber(summoner, 'level')
       ?? 1;
   }

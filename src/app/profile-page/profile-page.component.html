@@ -209,8 +209,12 @@
   @if (loaded) {
     <div class="section" id="comm" [@load3]="checked? 'default': 'hidden'">
       <div id="chad">
-        <app-chat></app-chat>
+        @defer (on idle) {
+          <app-chat></app-chat>
+        }
       </div>
-      <app-users-list></app-users-list>
+      @defer (on idle) {
+        <app-users-list></app-users-list>
+      }
     </div>
   }

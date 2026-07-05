@@ -16,6 +16,12 @@ export class FightApiService {
     });
   }
 
+  getMyAnimal(): Observable<{name: string}> {
+    return this.http.get<{name: string}>(this.apiConfig.buildUrl('/fight/animals/my'), {
+      withCredentials: true
+    });
+  }
+
   attack(fightUuid: string, enemy: string, spellName: string): Observable<any> {
     return this.http.post(this.apiConfig.buildUrl('/fight/attack'), null, {
       withCredentials: true,
